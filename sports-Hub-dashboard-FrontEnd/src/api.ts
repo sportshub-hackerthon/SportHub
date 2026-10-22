@@ -152,20 +152,24 @@ export const registrationsApi = {
   },
 };
 
+
 export const fixturesApi = {
   getByEvent: (eventId: number) =>
     request<FixtureResponse[]>(`/Fixtures/${eventId}`),
 
   generate: (
     eventId: number,
-    pitchId: number,
-    startDate: string
+    pitchId: number
   ) =>
     request<FixtureResponse[]>('/Fixtures/Generate', {
       method: 'POST',
-      body: JSON.stringify({ eventId, pitchId, startDate }),
+      body: JSON.stringify({
+        eventId,
+        pitchId,
+      }),
     }),
 };
+
 
 export const eventsApi = {
   list: () => request<EventResponse[]>(BASE),
