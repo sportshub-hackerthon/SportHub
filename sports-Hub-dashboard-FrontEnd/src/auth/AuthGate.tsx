@@ -1,6 +1,8 @@
+
 import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { useAuth } from "react-oidc-context";
+
 import {
   Alert,
   Box,
@@ -8,7 +10,6 @@ import {
   CircularProgress,
   Typography,
 } from "@mui/material";
-import { COACH_URL } from "./cognitoConfig";
 
 interface Props {
   children: ReactNode;
@@ -17,26 +18,23 @@ interface Props {
 export default function AuthGate({ children }: Props) {
   const auth = useAuth();
   const ssoStarted = useRef(false);
+
   const groupsClaim = auth.user?.profile?.["cognito:groups"];
-  const groups = Array.isArray(groupsClaim)
-    ? groupsClaim.filter((item): item is string => typeof item === "string")
+
+  const groups: string[] = Array.isArray(groupsClaim)
+    ? groupsClaim.filter(
+        (item): item is string => typeof item === "string"
+      )
     : [];
-  const isCoach = groups.includes("coach");
+
   const isOrganiser = groups.includes("organiser");
-  const shouldRedirectToOrganiser =
-    auth.isAuthenticated && !isCoach && isOrganiser;
 
-  // If an organiser signed in on the coach site, send them to the organiser
-  // site's entry point, NOT to a callback containing this site's OAuth state.
+  // Start Cognito login when arriving with ?sso=1.
   useEffect(() => {
-    if (shouldRedirectToOrganiser) {
-      window.location.replace(`${COACH_URL}/?sso=1`);
-    }
-  }, [shouldRedirectToOrganiser]);
+    const params = new URLSearchParams(window.location.search);
 
-  useEffect(() => {
     if (
-      window.location.search.includes("sso=1") &&
+      params.get("sso") === "1" &&
       !auth.isLoading &&
       !auth.activeNavigator &&
       !auth.isAuthenticated &&
@@ -44,6 +42,16 @@ export default function AuthGate({ children }: Props) {
       !ssoStarted.current
     ) {
       ssoStarted.current = true;
+
+      params.delete("sso");
+
+      window.history.replaceState(
+        {},
+        document.title,
+        window.location.pathname +
+          (params.toString() ? `?${params.toString()}` : "")
+      );
+
       void auth.signinRedirect();
     }
   }, [
@@ -54,15 +62,11 @@ export default function AuthGate({ children }: Props) {
     auth.signinRedirect,
   ]);
 
-  if (auth.isLoading || auth.activeNavigator || shouldRedirectToOrganiser) {
+  if (auth.isLoading || auth.activeNavigator) {
     return (
       <Centered>
         <CircularProgress sx={{ color: "#079447" }} />
-        <Typography>
-          {shouldRedirectToOrganiser
-            ? "Opening SportsHub Organiser..."
-            : "Checking your session..."}
-        </Typography>
+        <Typography>Checking your session...</Typography>
       </Centered>
     );
   }
@@ -70,16 +74,24 @@ export default function AuthGate({ children }: Props) {
   if (auth.error) {
     return (
       <Centered>
-        <Alert severity="error">{auth.error.message}</Alert>
+        <Alert severity="error">
+          {auth.error.message}
+        </Alert>
+
         <Typography variant="body2" color="text.secondary">
-          Start a new login from this Organiser website. Do not reuse an old
-          Cognito callback URL.
+          Start a new login from this Organiser website.
+          Do not reuse an old Cognito callback URL.
         </Typography>
+
         <Button
           variant="contained"
           onClick={() => {
-            // Clear a stale callback URL before creating a fresh PKCE request.
-            window.history.replaceState({}, document.title, "/");
+            window.history.replaceState(
+              {},
+              document.title,
+              "/"
+            );
+
             void auth.signinRedirect();
           }}
         >
@@ -92,16 +104,24 @@ export default function AuthGate({ children }: Props) {
   if (!auth.isAuthenticated) {
     return (
       <Centered>
-        <Typography variant="h4" sx={{ fontWeight: 800, color: "#101D33" }}>
+        <Typography
+          variant="h4"
+          sx={{ fontWeight: 800, color: "#101D33" }}
+        >
           SportsHub
         </Typography>
+
         <Typography color="text.secondary">
           Sign in to your Organiser account.
         </Typography>
+
         <Button
           variant="contained"
           onClick={() => void auth.signinRedirect()}
-          sx={{ bgcolor: "#079447", "&:hover": { bgcolor: "#06783A" } }}
+          sx={{
+            bgcolor: "#079447",
+            "&:hover": { bgcolor: "#06783A" },
+          }}
         >
           Sign in with SportsHub
         </Button>
@@ -109,15 +129,21 @@ export default function AuthGate({ children }: Props) {
     );
   }
 
+  // Stay on the Organiser website when authorised.
   if (!isOrganiser) {
     return (
       <Centered>
-        <Typography variant="h5" sx={{ fontWeight: 700 }}>
+        <Typography
+          variant="h5"
+          sx={{ fontWeight: 700 }}
+        >
           Access denied
         </Typography>
+
         <Typography color="text.secondary">
-          Your Cognito account is not in the coach group.
+          Your Cognito account is not in the organiser group.
         </Typography>
+
         <Button
           variant="outlined"
           onClick={() =>
@@ -131,6 +157,7 @@ export default function AuthGate({ children }: Props) {
       </Centered>
     );
   }
+
   return <>{children}</>;
 }
 
