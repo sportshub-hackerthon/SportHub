@@ -20,7 +20,7 @@
     /* Linting */
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "erasableSyntax1Only": true,
+    "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
   "include": ["src"]
