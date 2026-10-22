@@ -45,7 +45,13 @@ export default function EventSelector({ loadEvents, onSelect }: Props) {
 
       try {
         const result = await loadEvents();
-        if (active) setEvents(result);
+        if (active) {
+          if (!Array.isArray(result)) {
+            throw new Error("Invalid events response");
+          }
+
+          setEvents(result);
+        }
       } catch {
         if (active) setError("Unable to load events.");
       } finally {
@@ -307,7 +313,9 @@ export default function EventSelector({ loadEvents, onSelect }: Props) {
                       </Stack>
                       <LinearProgress
                         variant="determinate"
-                        value={(event.numberOfTeams/event.numberOfTeams)*100}
+                        value={
+                          (event.numberOfTeams / event.numberOfTeams) * 100
+                        }
                         sx={{
                           height: 8,
                           borderRadius: 5,

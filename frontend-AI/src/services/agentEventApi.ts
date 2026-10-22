@@ -16,10 +16,45 @@ export interface SportsHubEvent {
   numberOfPitches: number;
 }
 
+
 export async function getSportsHubEvents(): Promise<SportsHubEvent[]> {
-  const response = await api.get<SportsHubEvent[]>("/events");
-  return response.data;
+  const response = await api.get<unknown>("/events");
+
+  const payload = response.data;
+
+  //console.log("SportsHub events API response:", payload);
+
+  // The API returns an array directly.
+  if (Array.isArray(payload)) {
+    return payload as SportsHubEvent[];
+  }
+
+  // Support common paginated/wrapped response formats.
+  if (payload && typeof payload === "object") {
+    const result = payload as Record<string, unknown>;
+
+    const candidates = [
+      result.events,
+      result.data,
+      result.items,
+      result.results,
+      result.$values,
+    ];
+
+    for (const candidate of candidates) {
+      if (Array.isArray(candidate)) {
+        return candidate as SportsHubEvent[];
+      }
+    }
+  }
+
+  console.error("Unexpected events API response:", payload);
+
+  throw new Error(
+    "The events API did not return a valid events array."
+  );
 }
+
 export async function getAgentEvents(): Promise<AgentEventInfo[]> {
   const response = await api.get<AgentEventInfo[]>(
     "/Events"
