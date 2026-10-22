@@ -1,8 +1,9 @@
+
 import { api } from "./api";
 
 export interface BedrockChatRequest {
   message: string;
-  sessionId: string;
+  sessionId?: string;
 }
 
 export interface BedrockChatResponse {
@@ -11,11 +12,25 @@ export interface BedrockChatResponse {
   timestamp: string;
 }
 
-export async function sendAgentMessage(
+// General SportsHub chat: no event selected
+export async function sendGeneralChatMessage(
   request: BedrockChatRequest
 ): Promise<BedrockChatResponse> {
   const { data } = await api.post<BedrockChatResponse>(
     "/api/chat/invoke",
+    request
+  );
+
+  return data;
+}
+
+// Event-specific SportsHub chat
+export async function sendEventChatMessage(
+  eventId: number,
+  request: BedrockChatRequest
+): Promise<BedrockChatResponse> {
+  const { data } = await api.post<BedrockChatResponse>(
+    `/api/chat/invoke/${eventId}`,
     request
   );
 
