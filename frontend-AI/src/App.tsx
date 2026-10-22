@@ -1,12 +1,11 @@
-//import ProtectedRoute from "./components/ProtectedRoute";
+
+import CoachAuthGate from "./auth/AuthGate";
 import CoachChatPage from "./pages/CoachChatPage";
-//import WhatsAppMonitorPage from "./pages/WhatsAppMonitorPage";
 
 export default function App() {
   return (
-    //<ProtectedRoute>
+    <CoachAuthGate>
       <CoachChatPage />
-    //</ProtectedRoute>
+    </CoachAuthGate>
   );
-  //return <WhatsAppMonitorPage />;
 }
