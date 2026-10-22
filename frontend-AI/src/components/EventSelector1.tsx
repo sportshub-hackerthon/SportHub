@@ -114,7 +114,7 @@ export default function EventSelector({ loadEvents, onSelect }: Props) {
             color="text.secondary"
             variant="body2"
           >
-            Select your sports event to start chatting with Amusema SportsHub.
+            Select your sports event to start chatting with Amusema AI.
           </Typography>
         </Stack>
 

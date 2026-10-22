@@ -52,7 +52,7 @@ export default function SportsHubHeader() {
               </Typography>
             </Box>
             <Typography variant="caption" sx={{ color: "#CBD5E1" }}>
-              Coach Registration
+              AI Coach Assistant
             </Typography>
           </Box>
         </Stack>

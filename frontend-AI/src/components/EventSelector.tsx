@@ -122,7 +122,7 @@ export default function EventSelector({ loadEvents, onSelect }: Props) {
 
           <Typography color="text.secondary">
             Choose your tournament to register a team, check fixtures or chat
-            with Amusema SportsHub.
+            with Amusema AI.
           </Typography>
         </Box>
 
@@ -335,7 +335,7 @@ export default function EventSelector({ loadEvents, onSelect }: Props) {
                           fontWeight: 700,
                         }}
                       >
-                        Manual registeration
+                        Chat with AI
                       </Button>
                     </Box>
                   </CardContent>

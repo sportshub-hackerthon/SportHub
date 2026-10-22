@@ -1,13 +1,23 @@
-import type {
-  AgentRequest,
-  AgentResponse,
-} from "../types/chat";
+import { api } from "./api";
 
-import { mockAgentReply } from "./mockAgent";
+export interface BedrockChatRequest {
+  message: string;
+  sessionId: string;
+}
+
+export interface BedrockChatResponse {
+  sessionId: string;
+  response: string;
+  timestamp: string;
+}
 
 export async function sendAgentMessage(
-  request: AgentRequest,
-  allowedAgeGroups: string[] = []
-): Promise<AgentResponse> {
-  return mockAgentReply(request, allowedAgeGroups);
+  request: BedrockChatRequest
+): Promise<BedrockChatResponse> {
+  const { data } = await api.post<BedrockChatResponse>(
+    "/api/chat/invoke",
+    request
+  );
+
+  return data;
 }

@@ -69,7 +69,7 @@ export default function ChatMessage({
               ml: 1,
             }}
           >
-            Amusema SportsHub
+            Amusema AI
           </Typography>
         )}
 
