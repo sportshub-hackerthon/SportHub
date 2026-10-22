@@ -30,8 +30,14 @@ export async function sendEventChatMessage(
   request: BedrockChatRequest
 ): Promise<BedrockChatResponse> {
   const { data } = await api.post<BedrockChatResponse>(
-    `/api/chat/invoke/${eventId}`,
-    request
+    "/api/chat/invoke-event",
+    {
+      message: request.message,
+      eventId,
+      ...(request.sessionId
+        ? { sessionId: request.sessionId }
+        : {}),
+    }
   );
 
   return data;
