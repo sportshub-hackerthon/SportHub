@@ -8,9 +8,12 @@ export const ORGANISER_URL = "https://d4t6kc08b3ljm.cloudfront.net";
 
 // Build variables take precedence; these defaults apply only to the Coach client.
 const userPoolId = import.meta.env.VITE_COGNITO_USER_POOL_ID || POOL_ID;
-export const clientId = import.meta.env.VITE_COGNITO_CLIENT_ID || COACH_CLIENT_ID;
-export const cognitoDomain = (import.meta.env.VITE_COGNITO_DOMAIN ||
-  "https://eu-west-1dd1c0z51i.auth.eu-west-1.amazoncognito.com").replace(/\/$/, "");
+export const clientId =
+  import.meta.env.VITE_COGNITO_CLIENT_ID || COACH_CLIENT_ID;
+export const cognitoDomain = (
+  import.meta.env.VITE_COGNITO_DOMAIN ||
+  "https://eu-west-1dd1c0z51i.auth.eu-west-1.amazoncognito.com"
+).replace(/\/$/, "");
 
 // The Coach site must complete its own OAuth response. Never point its callback
 // at a different CloudFront distribution (or copy a callback URL from AWS's example).
@@ -20,7 +23,7 @@ export const cognitoConfig: AuthProviderProps = {
   redirect_uri: `${window.location.origin}`,
   post_logout_redirect_uri: `${window.location.origin}`,
   response_type: "code",
-  scope: "openid email profile",
+  scope: "openid email",
   // Explicit session storage makes the pending PKCE request easy to inspect.
   stateStore: new WebStorageStateStore({ store: window.sessionStorage }),
   onSigninCallback: () => {
