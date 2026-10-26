@@ -9,8 +9,7 @@ public class RegistrationService(
     ITeamRepository teams, 
     INotificationRepository notifications, 
     IEventRepository events,
-    EmailNotificationService? emailService = null,
-    WhatsAppService? whatsAppService = null)
+    EmailNotificationService? emailService = null)
 {
     public async Task<RegistrationResponse?> GetAsync(int id)
     {
@@ -79,16 +78,8 @@ public class RegistrationService(
                     );
                 }
 
-                // Send WhatsApp notification (if coach phone is available)
-                if (whatsAppService != null && !string.IsNullOrEmpty(teamEntity.CoachPhone))
-                {
-                    await whatsAppService.SendRegistrationConfirmationAsync(
-                        teamEntity.CoachPhone,
-                        teamEntity.Name,
-                        eventEntity.Name,
-                        teamEntity.CoachName
-                    );
-                }
+                // Note: WhatsApp notifications are now handled by AWS End User Messaging Social
+                // Coaches can interact with the AI bot at +27 69 674 9685
             }
             catch
             {
