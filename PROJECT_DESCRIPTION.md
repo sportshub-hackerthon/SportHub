@@ -66,7 +66,7 @@ graph TB
     end
 
     subgraph "Communication Gateway"
-        TWILIO[Twilio WhatsApp<br/>Business API]
+        TWILIO[AWS End User Messaging Social (WhatsApp)<br/>Business API]
     end
 
     subgraph "AWS Cloud Infrastructure"
@@ -111,7 +111,7 @@ graph TB
     
     %% Response flow
     LAMBDA -->|JSON Response| API
-    API -->|TwiML Response| TWILIO
+    API -->|WhatsApp API Response| TWILIO
     TWILIO -->|Deliver Message| WA
     SES -->|Email| WA
     
@@ -161,8 +161,8 @@ graph TB
 - Migration scripts for easy setup
 - Region: eu-west-1 (low latency to South Africa)
 
-**5. Twilio WhatsApp Business API**
-- TwiML responses for reliable message delivery
+**5. AWS End User Messaging Social (WhatsApp) Business API**
+- WhatsApp API responses for reliable message delivery
 - Handles 1600-character limit automatically (truncates long responses)
 - Webhook integration for bi-directional communication
 
@@ -177,7 +177,7 @@ graph TB
 **Registration Flow:**
 ```
 User (WhatsApp) 
-    → Twilio Webhook 
+    → AWS WhatsApp Webhook 
     → C# Backend API (Render)
     → AWS Lambda (Python)
     → AWS Bedrock AgentCore
@@ -319,7 +319,7 @@ Algorithm:
 
 | Endpoint | Purpose | Used By |
 |----------|---------|---------|
-| `POST /api/whatsapp/webhook` | WhatsApp message handler | Twilio |
+| `POST /api/whatsapp/webhook` | WhatsApp message handler | AWS WhatsApp |
 | `POST /api/chat/invoke` | General web chat | Web dashboard |
 | `POST /api/chat/invoke-event` | Event-specific chat | Web dashboard |
 | `GET/POST /api/Events` | Event CRUD | Admin panel |
@@ -351,7 +351,7 @@ try {
 
 **Character Limit Handling:**
 ```csharp
-// Twilio WhatsApp limit: 1600 characters
+// AWS End User Messaging Social (WhatsApp) limit: 1600 characters
 if (response.Length > 1500) {
     response = response.Substring(0, 1500) + 
                "...\n\n(Message truncated. Ask for specific details!)";
@@ -406,7 +406,7 @@ for event in response['stream']:
 - ✅ SQL parameterization (prevents injection)
 - ✅ Input validation on all endpoints
 - ✅ Error logging without exposing internals
-- ✅ Twilio signature verification (webhook security)
+- ✅ AWS WhatsApp signature verification (webhook security)
 
 ---
 
@@ -508,7 +508,7 @@ for event in response['stream']:
 - ✅ Serverless architecture (Lambda, API Gateway)
 - ✅ RESTful API design (.NET 8)
 - ✅ Database design and optimization
-- ✅ Webhook integration (Twilio)
+- ✅ Webhook integration (AWS WhatsApp)
 - ✅ Clean architecture principles
 - ✅ Error handling and logging
 - ✅ Performance optimization
