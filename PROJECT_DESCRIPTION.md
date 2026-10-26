@@ -440,12 +440,6 @@ for event in response['stream']:
 - Database supports 10,000+ teams per event
 - Bedrock rate limits: 100 requests/minute (upgradeable)
 
-**Cost Efficiency:**
-- Lambda: $0 (within free tier for typical hackathon usage)
-- Bedrock: ~$0.01 per conversation (Claude Sonnet 4.5 v1 pricing)
-- Database: ~$15/month (RDS t3.micro)
-- **Total**: ~$20/month for 1000 teams/month
-
 ---
 
 ## 🚀 Innovation & Differentiation

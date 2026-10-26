@@ -341,7 +341,6 @@ curl -X POST https://sporthub-rng4.onrender.com/api/Fixtures/generate/1
 - **Concurrent Users:** 1000+ (Lambda auto-scales)
 - **Database:** Handles 10,000+ teams per event
 - **Uptime:** 99.9% (AWS infrastructure)
-- **Cost:** ~$25/month for 1000 teams (Lambda + RDS + Bedrock + SES + WhatsApp)
 
 ---
 
