@@ -62,11 +62,13 @@ SportHub provides an **AI-powered conversational platform** accessible via Whats
 graph TB
     subgraph "User Layer"
         WA[WhatsApp Users<br/>+27 69 674 9685]
+        EMAIL[📧 Coach Email<br/>Confirmations]
         WEB[Web Dashboard<br/>Future Expansion]
     end
 
     subgraph "AWS Cloud Services"
         SOCIAL[AWS End User Messaging Social<br/>WhatsApp Business API]
+        SES[AWS SES<br/>Email Service]
         
         subgraph "AI Processing"
             BEDROCK[AWS Bedrock AgentCore<br/>Claude Sonnet 4.5 v1]
@@ -83,6 +85,8 @@ graph TB
     API -->|AI Requests| LAMBDA
     LAMBDA <-->|Invoke Harness| BEDROCK
     API <-->|Store/Query| RDS
+    API -->|Send Email| SES
+    SES -->|Confirmation| EMAIL
     WEB -.->|Future| API
 
     %% Styling
@@ -90,18 +94,19 @@ graph TB
     classDef ai fill:#8B5CF6,stroke:#232F3E,stroke-width:2px,color:#fff
     classDef user fill:#06B6D4,stroke:#232F3E,stroke-width:2px,color:#232F3E
     
-    class SOCIAL,LAMBDA,RDS aws
+    class SOCIAL,LAMBDA,RDS,SES aws
     class BEDROCK ai
-    class WA,WEB,API user
+    class WA,WEB,API,EMAIL user
 ```
 
 ### Core Technology Stack
 
-**AWS Services (2 CDS Services):**
+**AWS Services (3 CDS Services):**
 1. **AWS Bedrock AgentCore** - Conversational AI with Claude Sonnet 4.5 v1
 2. **AWS End User Messaging Social** - WhatsApp Business API integration
-3. **AWS Lambda** - Serverless Bedrock proxy (Python 3.12)
-4. **AWS RDS MySQL** - Tournament data storage
+3. **AWS SES (Simple Email Service)** - Registration confirmation emails
+4. **AWS Lambda** - Serverless Bedrock proxy (Python 3.12)
+5. **AWS RDS MySQL** - Tournament data storage
 
 **Backend:**
 - .NET 8 REST API with clean architecture
@@ -110,6 +115,7 @@ graph TB
 
 **Communication:**
 - WhatsApp as primary channel (+27 69 674 9685 - South African number)
+- Email confirmations via SES (coach receives confirmation after registration)
 - Natural language processing via Bedrock
 - Real-time webhook integration
 
@@ -128,12 +134,18 @@ AWS Lambda (Bedrock Proxy)
 AWS Bedrock AgentCore (Claude Sonnet 4.5)
     ↓
 Response back through stack to WhatsApp
+    ↓
+AWS SES sends confirmation email to coach
 ```
 
 **Database Operations:**
 - All registrations, fixtures, events stored in AWS RDS MySQL
 - Real-time validation checks before confirming registrations
 - Optimized queries for fast fixture retrieval
+
+**Multi-Channel Notifications:**
+- **WhatsApp:** Instant AI responses via AWS End User Messaging Social
+- **Email:** Professional confirmation via AWS SES (includes event details, team info)
 
 ---
 
@@ -273,11 +285,11 @@ Unified data model ensures consistency across all channels.
 - Fast cold starts (2-5 seconds)
 - Seamless integration with Bedrock
 
-### WhatsApp Business API
-- Production-ready integration with AWS End User Messaging Social
-- South African phone number (+27) for local accessibility
-- Reliable message delivery with webhook architecture
+### Multi-Channel Communication
+- **WhatsApp:** AWS End User Messaging Social with South African number (+27)
+- **Email:** AWS SES for professional confirmations with event details
 - Character limit handling (1600 chars) with smart truncation
+- Reliable delivery across both channels
 
 ### Database Design
 - Normalized schema for events, teams, registrations, fixtures
@@ -361,11 +373,13 @@ Unified data model ensures consistency across all channels.
 - **Bedrock AgentCore Harness** - Built production conversational AI agent from scratch
 - **AWS Lambda** - Serverless architecture for AI workload management
 - **AWS End User Messaging Social** - WhatsApp Business API integration
-- **Multi-Service Orchestration** - Connected Lambda, RDS, Bedrock, WhatsApp seamlessly
+- **AWS SES** - Professional email delivery system
+- **Multi-Service Orchestration** - Connected Lambda, RDS, Bedrock, WhatsApp, SES seamlessly
 
 ### Technical Growth
 - Natural language processing and intent recognition
 - Webhook architecture for real-time messaging
+- Multi-channel notification systems (WhatsApp + Email)
 - Clean architecture patterns in .NET
 - Database optimization for tournament data
 - Error handling in distributed systems
