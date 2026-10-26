@@ -18,7 +18,7 @@ Traditional tournament registration requires web forms and internet access—bar
 - **Multi-turn conversations** - Handles complex registration flows naturally
 
 ### **Intelligent AI Assistant (AWS Bedrock AgentCore)**
-- **Claude 3.5 Sonnet v2** - Advanced language understanding
+- **Claude Sonnet 4.5 v1 v2** - Advanced language understanding
 - **Session management** - Maintains conversation history per coach
 - **Intent recognition** - Understands questions, corrections, commands
 - **Flexible responses** - Not rigid pattern matching
@@ -50,7 +50,7 @@ AWS Lambda (Python 3.12)
     ↓ boto3
 AWS Bedrock AgentCore Harness
     ↓
-Claude 3.5 Sonnet v2
+Claude Sonnet 4.5 v1 v2
     ↓ Response Stream
 AWS Lambda → Backend API → AWS WhatsApp → User
 ```
@@ -149,7 +149,7 @@ This will:
 ### **5. Configure AWS WhatsApp**
 
 **a. Create SNS Topic:**
-- Name: `sporthub-whatsapp-messages`
+- Name: `sporthub-whatsapp-events` (or your chosen name)
 - Type: Standard
 
 **b. Create SNS Subscription:**
@@ -235,7 +235,7 @@ SportHub/
 6. Creates session ID: whatsapp-aws-{phone}
 7. Calls AWS Lambda with message + session ID
 8. Lambda invokes Bedrock AgentCore Harness
-9. Claude 3.5 Sonnet processes request
+9. Claude Sonnet 4.5 v1 processes request
 10. Streams response back to Lambda
 11. Lambda returns JSON to backend
 12. Backend sends WhatsApp message via AWS Social Messaging
@@ -341,7 +341,7 @@ curl -X POST https://sporthub-rng4.onrender.com/api/Fixtures/generate/1
 - **Concurrent Users:** 1000+ (Lambda auto-scales)
 - **Database:** Handles 10,000+ teams per event
 - **Uptime:** 99.9% (AWS infrastructure)
-- **Cost:** ~$20/month for 1000 teams (Lambda + RDS + Bedrock)
+- **Cost:** ~$25/month for 1000 teams (Lambda + RDS + Bedrock + SES + WhatsApp)
 
 ---
 
@@ -354,7 +354,7 @@ curl -X POST https://sporthub-rng4.onrender.com/api/Fixtures/generate/1
 2. **AWS End User Messaging Social** (Secondary) - WhatsApp Business integration
 
 ### **Team:**
-- **Developer:** Precious Mokgoebone
+- **Developers:** Precious Mokgoebo, Shereen Ncube, Athuli Ntintili
 - **Organization:** Umdoko Internet
 - **Location:** South Africa 🇿🇦
 
@@ -369,16 +369,16 @@ MIT License - See LICENSE file for details
 ## 🙏 **Acknowledgments**
 
 - AWS for Bedrock AgentCore and End User Messaging platforms
-- Anthropic for Claude 3.5 Sonnet
+- Anthropic for Claude Sonnet 4.5 v1
 - South African township sports communities for inspiration
 
 ---
 
 ## 📧 **Contact**
 
-- **Email:** mokgoeboprecious@gmail.com
+- **Email:** precious.mokgoebo@umdoko.com
 - **GitHub:** https://github.com/sportshub-hackerthon/SportHub
-- **LinkedIn:** [Your LinkedIn]
+- **Organization:** Umdoko Internet
 
 ---
 

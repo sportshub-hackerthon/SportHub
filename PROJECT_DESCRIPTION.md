@@ -77,7 +77,7 @@ graph TB
         
         subgraph "AI & Intelligence"
             BEDROCK[AWS Bedrock<br/>AgentCore Harness]
-            CLAUDE[Claude 3.5 Sonnet v2<br/>Conversational AI]
+            CLAUDE[Claude Sonnet 4.5 v1<br/>Conversational AI]
         end
         
         subgraph "Data Layer"
@@ -139,7 +139,7 @@ graph TB
 ### Core Components
 
 **1. AWS Bedrock AgentCore Harness**
-- Custom agent built using Claude 3.5 Sonnet v2
+- Custom agent built using Claude Sonnet 4.5 v1
 - Harness ARN: `arn:aws:bedrock-agentcore:eu-west-1:262683589693:harness/amusema_sports_agent-Azjer58UxL`
 - Handles natural language processing, intent recognition, and conversational flow
 - Session management with 33+ character identifiers per user
@@ -181,7 +181,7 @@ User (WhatsApp)
     → C# Backend API (Render)
     → AWS Lambda (Python)
     → AWS Bedrock AgentCore
-    → Claude 3.5 Sonnet response
+    → Claude Sonnet 4.5 v1 response
     → Back through stack to WhatsApp
     → AWS SES sends confirmation email
 ```
@@ -442,7 +442,7 @@ for event in response['stream']:
 
 **Cost Efficiency:**
 - Lambda: $0 (within free tier for typical hackathon usage)
-- Bedrock: ~$0.01 per conversation (Claude 3.5 Sonnet pricing)
+- Bedrock: ~$0.01 per conversation (Claude Sonnet 4.5 v1 pricing)
 - Database: ~$15/month (RDS t3.micro)
 - **Total**: ~$20/month for 1000 teams/month
 
@@ -526,9 +526,9 @@ for event in response['stream']:
 
 ## 👥 Team
 
-**Developer:** Precious Mokgoebone  
+**Developers:** Precious Mokgoebo, Shereen Ncube, Athuli Ntintili  
 **Organization:** Umdoko Internet  
-**Email:** mokgoeboprecious@gmail.com
+**Email:** precious.mokgoebo@umdoko.com
 
 ---
 
