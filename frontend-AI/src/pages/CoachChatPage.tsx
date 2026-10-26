@@ -1,269 +1,243 @@
 import { useEffect, useRef, useState } from "react";
+
 import {
   Alert,
+  Avatar,
   Box,
   Button,
+  Chip,
   CircularProgress,
-  Container,
   Paper,
+  Stack,
   Typography,
+  Fab,
+  Tooltip,
 } from "@mui/material";
+
 import axios from "axios";
 
+import SmartToyOutlinedIcon from "@mui/icons-material/SmartToyOutlined";
+
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+
 import type { AgentEventInfo } from "../types/agentEvent";
+
 import type {
   ChatMessage as Message,
   QuickReply,
   Registration,
   RegistrationStatus,
 } from "../types/chat";
-//import RegistrationStatusCard from "../components/RegistrationStatusCard";
-import { getAgentEventInfo } from "../services/agentEventApi";
-import { registerTeam } from "../services/registrationApi";
-import { sendAgentMessage } from "../services/eventApi";
 
-//import EventDetailsCard from "../components/EventDetailsCard";
-import ChatMessage from "../components/ChatMessage";
-import ChatInput from "../components/ChatInput";
-import RegistrationActions from "../components/RegistrationActions";
+import type { TeamFixture } from "../types/fixture";
+
 import type { RegistrationStatusResponse } from "../types/registrationStatus";
+
+import {
+  getAgentEventInfo,
+  getSportsHubEvents,
+} from "../services/agentEventApi";
+
+//import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutlined";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+
+import GeneralChatPage from "./GeneralChatPage";
+
+import { sendEventChatMessage } from "../services/eventApi";
+
 import {
   checkCanRegister,
   getRegistrationStatus,
+  registerTeam,
 } from "../services/registrationApi";
 
-import { readCanRegister } from "../utils/registration";
-//import TeamFixtureLookup from "../components/TeamFixtureLookup";
-import { resetMockConversation } from "../services/mockAgent";
-import { Avatar, Stack, Chip /* Skeleton */ } from "@mui/material";
-
-import SmartToyOutlinedIcon from "@mui/icons-material/SmartToyOutlined";
-import SportsHubHeader from "../components/SportsHubHeader";
-import { C } from "../theme/sportsHubTheme";
-//import RegistrationStatusCard from "../components/RegistrationStatusCard";
-//import EventDetailsCard from "../components/EventDetailsCard";
-//import TeamFixtureLookup from "../components/TeamFixtureLookup";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { getTeamFixtures } from "../services/fixtureApi";
-//import { getAgentEventInfo } from "../services/agentEventApi";
-//import type { Fixture } from "../types/fixture";
-//import type { QuickReply } from "../types/chat";
-import type { TeamFixture } from "../types/fixture";
-import WhatsAppRegistrationButton from "../components/WhatsAppRegistrationButton";
-import EventSelector from "../components/EventSelector";
-//import { getAgentEvents } from "../services/agentEventApi";
-import { getSportsHubEvents } from "../services/agentEventApi";
-//const EVENT_ID = Number(import.meta.env.VITE_EVENT_ID ?? 1);
+
 import { findTeamByName } from "../services/teamLookupApi";
+
+import { readCanRegister } from "../utils/registration";
+
+import ChatMessage from "../components/ChatMessage";
+
+import ChatInput from "../components/ChatInput";
+
+import RegistrationActions from "../components/RegistrationActions";
+
+import SportsHubHeader from "../components/SportsHubHeader";
+
+import WhatsAppRegistrationButton from "../components/WhatsAppRegistrationButton";
+
+import EventSelector from "../components/EventSelector";
+
+import { C } from "../theme/sportsHubTheme";
+
 const MAIN_MENU: QuickReply[] = [
   { label: "Register Team", value: "register" },
+
   { label: "Event Info", value: "event info" },
+
   { label: "Check Fixtures", value: "fixtures" },
-  {
-    label: "Registration Status",
-    value: "registration status",
-  },
+
+  { label: "Registration Status", value: "registration status" },
 ];
 
 function makeMessage(
   role: "user" | "assistant",
+
   content: string,
+
   registration?: Registration,
+
   quickReplies?: QuickReply[],
 ): Message {
   return {
     id: crypto.randomUUID(),
+
     role,
+
     content,
+
     timestamp: new Date().toISOString(),
+
     registration,
+
     quickReplies,
   };
 }
 
 export default function CoachChatPage() {
   const [event, setEvent] = useState<AgentEventInfo | null>(null);
+
   const [messages, setMessages] = useState<Message[]>([]);
+
   const [loading, setLoading] = useState(false);
-  const [eventLoading, setEventLoading] = useState(true);
+
+  const [eventLoading, setEventLoading] = useState(false);
+
   const [saving, setSaving] = useState(false);
+
   const [error, setError] = useState<string | null>(null);
+
   const [awaitingFixtureTeamName, setAwaitingFixtureTeamName] = useState(false);
+
   const [status, setStatus] = useState<RegistrationStatus>("idle");
 
   const [draft, setDraft] = useState<Registration | null>(null);
 
-  const [conversationId] = useState(() => crypto.randomUUID());
-  //const [registrationRefreshKey, setRegistrationRefreshKey] = useState(0);
+  // One client-created ID per selected event; reused for all Bedrock messages.
+  const sessionIdRef = useRef<string>(crypto.randomUUID());
+
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const busy = loading || saving;
 
-  const ageGroups =
-    event?.ageGroups
-      ?.split(",")
-      .map((age) => age.trim().toUpperCase().replace(/\s/g, ""))
-      .filter(Boolean) ?? [];
+  const [generalChatOpen, setGeneralChatOpen] = useState(false);
 
-  // useEffect(() => {
-  //   let active = true;
-
-  //   getAgentEventInfo(EVENT_ID)
-  //     .then((data) => {
-  //       if (!active) return;
-
-  //       setEvent(data);
-  //       setMessages([
-  //         makeMessage(
-  //           "assistant",
-  //           `Hi! Welcome to ${data.name}. How can I help you today?`,
-  //           undefined,
-  //           MAIN_MENU,
-  //         ),
-  //       ]);
-  //     })
-  //     .catch((error: unknown) => {
-  //       if (!active) return;
-
-  //       console.error("Failed to load event:", error);
-
-  //       if (axios.isAxiosError(error)) {
-  //         const status = error.response?.status;
-
-  //         if (!error.response) {
-  //           setError(
-  //             "Cannot connect to the backend. Check your API URL, server and CORS settings.",
-  //           );
-  //         } else if (status === 404) {
-  //           setError(
-  //             `Event ${EVENT_ID} was not found, or the API route is incorrect.`,
-  //           );
-  //         } else if (status === 401 || status === 403) {
-  //           setError("You are not authorised to retrieve this event.");
-  //         } else {
-  //           setError(`Unable to load event. Server returned ${status}.`);
-  //         }
-  //       } else {
-  //         setError("An unexpected error occurred while loading the event.");
-  //       }
-  //     })
-  //     .finally(() => {
-  //       if (active) setEventLoading(false);
-  //     });
-
-  //   return () => {
-  //     active = false;
-  //   };
-  // }, []);
-
-  /* const handleSelectEvent = (selected: AgentEventInfo) => {
-    setEvent(selected);
-    setMessages([
-      makeMessage(
-        "assistant",
-        `Welcome to ${selected.name}! What would you like to do?`,
-        undefined,
-        MAIN_MENU,
-      ),
-    ]);
-
-    setStatus("idle");
-    setDraft(null);
-    setAwaitingFixtureTeamName(false);
-    setEventLoading(false);
-  }; */
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [messages, status]);
 
   const handleSelectEvent = async (eventId: number) => {
-    try {
-      setError(null);
-      setEventLoading(true);
+    setError(null);
 
+    setEventLoading(true);
+
+    try {
       const selectedEvent = await getAgentEventInfo(eventId);
 
-      // Reset previous conversation
-      resetMockConversation(conversationId);
+      sessionIdRef.current = crypto.randomUUID();
 
-      //const newConversationId = crypto.randomUUID();
-      //setConversationId(newConversationId);
-
-      setDraft(null);
-      setStatus("idle");
-      setAwaitingFixtureTeamName(false);
-      setMessages([]);
-
-      // Set chosen event
       setEvent(selectedEvent);
 
-      // Show AI welcome message
+      setDraft(null);
+
+      setStatus("idle");
+
+      setAwaitingFixtureTeamName(false);
+
       setMessages([
         makeMessage(
           "assistant",
           `Welcome to ${selectedEvent.name}! How can I help you today?`,
-          undefined,
-          MAIN_MENU,
         ),
       ]);
-    } catch {
+    } catch (err) {
+      console.error("Unable to load event", err);
+
       setError("Unable to open the selected event.");
     } finally {
       setEventLoading(false);
     }
   };
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "nearest",
-    });
-  }, [messages, status]);
 
   const addAssistantMessage = (
     content: string,
+
     extras?: {
       eventDetails?: AgentEventInfo;
+
       fixtures?: TeamFixture[];
+
       quickReplies?: QuickReply[];
+
       registrationStatus?: RegistrationStatusResponse;
     },
   ) => {
     setMessages((prev) => [
       ...prev,
+
       {
         id: crypto.randomUUID(),
+
         role: "assistant",
+
         content,
+
         timestamp: new Date().toISOString(),
+
         ...extras,
       },
     ]);
   };
 
   const handleSend = async (text: string) => {
-    if (!event || busy) return;
+    if (!event || busy || !text.trim()) return;
 
     setLoading(true);
+
     setError(null);
 
     setMessages((prev) => [...prev, makeMessage("user", text)]);
 
     try {
       const input = text.trim().toLowerCase();
+
+      // Keep existing structured local cards until backend returns equivalents.
       if (
-        input === "registration status" ||
-        input === "check registration status" ||
-        input === "available spots" ||
-        input === "how many spaces are available"
+        [
+          "registration status",
+
+          "check registration status",
+
+          "available spots",
+
+          "how many spaces are available",
+        ].includes(input)
       ) {
         try {
-          const data = await getRegistrationStatus(event!.id);
+          const data = await getRegistrationStatus(event.id);
 
           addAssistantMessage("Here's the latest registration availability:", {
             registrationStatus: data,
+
             quickReplies: MAIN_MENU,
           });
         } catch {
           addAssistantMessage(
             "I couldn't retrieve registration availability right now. Please try again.",
-            { quickReplies: MAIN_MENU },
+            {
+              quickReplies: MAIN_MENU,
+            },
           );
         }
 
@@ -276,14 +250,16 @@ export default function CoachChatPage() {
 
           addAssistantMessage(
             "Fixture lookup cancelled. What would you like to do next?",
-            { quickReplies: MAIN_MENU },
+            {
+              quickReplies: MAIN_MENU,
+            },
           );
 
           return;
         }
 
         try {
-          const matches = await findTeamByName(event!.id, text.trim());
+          const matches = await findTeamByName(event.id, text.trim());
 
           if (matches.length === 0) {
             addAssistantMessage(
@@ -292,18 +268,22 @@ export default function CoachChatPage() {
                 quickReplies: [{ label: "Cancel", value: "cancel" }],
               },
             );
+
             return;
           }
 
           if (matches.length > 1) {
             addAssistantMessage(
-              "I found multiple teams matching your search. Please enter or select the correct team:",
+              "I found multiple teams matching your search. Please select the correct team:",
               {
                 quickReplies: [
-                  ...matches.slice(0, 10).map((team) => ({
-                    label: team.teamName,
-                    value: team.teamName,
-                  })),
+                  ...matches
+                    .slice(0, 10)
+                    .map((team) => ({
+                      label: team.teamName,
+                      value: team.teamName,
+                    })),
+
                   { label: "Cancel", value: "cancel" },
                 ],
               },
@@ -314,19 +294,16 @@ export default function CoachChatPage() {
 
           const team = matches[0];
 
-          // IMPORTANT: Use team.teamId, not team.id
-          const result = await getTeamFixtures(team.teamId, event!.id);
+          const result = await getTeamFixtures(team.teamId, event.id);
 
           setAwaitingFixtureTeamName(false);
 
           addAssistantMessage(
-            result.fixtures.length > 0
+            result.fixtures.length
               ? `I found ${result.fixtureCount} fixtures for ${team.teamName}.`
               : `No fixtures are currently available for ${team.teamName}.`,
-            {
-              fixtures: result.fixtures,
-              quickReplies: MAIN_MENU,
-            },
+
+            { fixtures: result.fixtures, quickReplies: MAIN_MENU },
           );
         } catch {
           addAssistantMessage(
@@ -340,142 +317,127 @@ export default function CoachChatPage() {
         return;
       }
 
-      if (
-        status === "idle" ||
-        status === "completed" ||
-        status === "cancelled"
-      ) {
-        if (input === "event info") {
-          try {
-            const details = await getAgentEventInfo(event!.id);
+      if (input === "event info") {
+        try {
+          const details = await getAgentEventInfo(event.id);
 
-            addAssistantMessage("Here are the details for your event:", {
-              eventDetails: details,
-              quickReplies: MAIN_MENU,
-            });
-          } catch {
-            addAssistantMessage(
-              "I couldn't retrieve the event information right now.",
-              { quickReplies: MAIN_MENU },
-            );
-          }
+          addAssistantMessage("Here are the details for your event:", {
+            eventDetails: details,
 
-          return;
-        }
-
-        if (input === "fixtures" || input === "check fixtures") {
-          setAwaitingFixtureTeamName(true);
-
+            quickReplies: MAIN_MENU,
+          });
+        } catch {
           addAssistantMessage(
-            "Sure! What's your registered team name? You can also type cancel.",
+            "I couldn't retrieve the event information right now.",
+            {
+              quickReplies: MAIN_MENU,
+            },
           );
-
-          return;
         }
-      }
-      const response = await sendAgentMessage(
-        {
-          conversation_id: conversationId,
-          event_id: event.id,
-          message: text,
-        },
-        ageGroups,
-      );
 
-      setStatus(response.status);
-
-      if (response.status === "review") {
-        setDraft(response.registration ?? null);
+        return;
       }
 
-      if (response.status === "cancelled") {
-        setDraft(null);
+      if (input === "fixtures" || input === "check fixtures") {
+        setAwaitingFixtureTeamName(true);
+
+        addAssistantMessage(
+          "Sure! What's your registered team name? You can also type cancel.",
+        );
+
+        return;
       }
 
-      setMessages((prev) => [
-        ...prev,
-        makeMessage(
-          "assistant",
-          response.reply,
-          response.registration ?? undefined,
-          response.quickReplies,
-        ),
-      ]);
-    } catch {
-      setError("Unable to process your message.");
+      // All other messages go to the real Bedrock-backed chat endpoint.
+      // This API accepts only message and an optional sessionId.
+      const requestSessionId = sessionIdRef.current;
+      const result = await sendEventChatMessage(event.id, {
+        message: text.trim(),
+        sessionId: requestSessionId,
+      });
+
+      if (sessionIdRef.current === requestSessionId && result.sessionId) {
+        sessionIdRef.current = result.sessionId;
+      }
+
+      addAssistantMessage(result.response);
+    } catch (err: unknown) {
+      console.error("SportsHub agent request failed", err);
+
+      if (axios.isAxiosError(err)) {
+        if (!err.response) {
+          setError(
+            "Cannot connect to the AI assistant. Please check your connection.",
+          );
+        } else if (err.response.status === 401) {
+          setError("Please sign in to use the AI assistant.");
+        } else if (err.response.status === 403) {
+          setError("You are not authorised to use the AI assistant.");
+        } else {
+          setError(`AI assistant returned an error (${err.response.status}).`);
+        }
+      } else {
+        setError("Unable to process your message.");
+      }
     } finally {
       setLoading(false);
     }
   };
 
+  // Retained for future structured registration responses. The current
+  // Bedrock endpoint does not provide a Registration draft to confirm.
   const handleConfirm = async () => {
     if (!event || !draft || busy) return;
 
     setSaving(true);
+
     setError(null);
 
     try {
-      // Real backend request
       const availability = await checkCanRegister(event.id);
 
       if (!readCanRegister(availability)) {
         setError("Registration is currently unavailable for this event.");
+
         return;
       }
 
       await registerTeam({
         eventId: event.id,
+
         teamName: draft.teamName,
+
         schoolName: draft.schoolName,
+
         coachName: draft.coachName,
+
         coachPhone: draft.coachPhone,
+
         coachEmail: draft.coachEmail,
+
         ageGroup: draft.ageGroup,
+
         division: draft.division,
       });
 
       setStatus("completed");
-      setDraft(null);
-      //setRegistrationRefreshKey((prev) => prev + 1);
-      const isDemoMode = import.meta.env.VITE_DEMO_MODE === "true";
 
-      /* setMessages((prev) => [
-        ...prev,
-        makeMessage(
-          "assistant",
-          isDemoMode
-            ? `Demo registration completed for ${draft.teamName}. No data was saved to the database.`
-            : `Registration request submitted for ${draft.teamName}. Please check its status with the organiser.`,
-        ),
-      ]); */
-      setMessages((prev) => [
-        ...prev,
+      setDraft(null);
+
+      addAssistantMessage(
+        "Your registration request has been submitted successfully.",
         {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          content: isDemoMode
-            ? `Demo registration completed for ${draft.teamName}. No data was saved to the database.`
-            : "Your registration request has been submitted successfully. You can now check fixtures or register another team.",
-          timestamp: new Date().toISOString(),
           quickReplies: MAIN_MENU,
         },
-      ]);
-      resetMockConversation(conversationId);
+      );
     } catch (err: unknown) {
-      let message = "Unable to register the team.";
+      const detail = axios.isAxiosError(err)
+        ? err.response?.data?.detail
+        : undefined;
 
-      if (axios.isAxiosError(err)) {
-        const detail = err.response?.data?.detail;
-
-        if (typeof detail === "string") {
-          message = detail;
-        } else if (!err.response) {
-          message =
-            "Could not contact the server. Please check the connection before retrying.";
-        }
-      }
-
-      setError(message);
+      setError(
+        typeof detail === "string" ? detail : "Unable to register the team.",
+      );
     } finally {
       setSaving(false);
     }
@@ -483,16 +445,24 @@ export default function CoachChatPage() {
 
   const handleCancel = async () => {
     if (busy) return;
+
     await handleSend("cancel");
   };
+
+  if (generalChatOpen) {
+    return <GeneralChatPage onBack={() => setGeneralChatOpen(false)} />;
+  }
 
   if (!event) {
     return (
       <Box
         sx={{
           height: "100dvh",
+
           display: "flex",
+
           flexDirection: "column",
+
           bgcolor: C.background,
         }}
       >
@@ -508,59 +478,122 @@ export default function CoachChatPage() {
           loadEvents={getSportsHubEvents}
           onSelect={handleSelectEvent}
         />
+
+        <Tooltip title="Chat with SportsHub AI" placement="left">
+          <Fab
+            variant="extended"
+            aria-label="Open general AI chat"
+            onClick={() => setGeneralChatOpen(true)}
+            sx={{
+              position: "fixed",
+
+              bottom: { xs: 20, sm: 32 },
+
+              right: { xs: 20, sm: 32 },
+
+              zIndex: 1200,
+
+              bgcolor: "#101D33",
+
+              color: C.white,
+
+              fontWeight: 700,
+
+              textTransform: "none",
+
+              boxShadow: "0 8px 24px rgba(7,148,71,0.28)",
+
+              "&:hover": {
+                bgcolor: "#101D33",
+
+                transform: "translateY(-3px)",
+
+                boxShadow: "0 12px 28px rgba(7,148,71,0.36)",
+              },
+              borderRadius: 1,
+
+              transition: "all 0.2s ease",
+            }}
+          >
+            <AutoAwesomeIcon  sx={{ mr: 1 }} />
+            General AI Chat
+          </Fab>
+        </Tooltip>
       </Box>
     );
   }
+
   return (
     <Box
       sx={{
         height: "100dvh",
+
         minHeight: 480,
+
         bgcolor: C.background,
+
         display: "flex",
+
         flexDirection: "column",
       }}
     >
       <SportsHubHeader />
 
-      <Container
-        maxWidth="md"
+      <Box
         sx={{
           flex: 1,
+          width: "70%",
+          minWidth: 0,
           minHeight: 0,
           display: "flex",
           flexDirection: "column",
+          alignSelf:'center',
           pt: { xs: 1, md: 3 },
           pb: { xs: 0, md: 3 },
           px: { xs: 0, sm: 2 },
+          mx: { sx: 0, md: 2 },
         }}
       >
         <Paper
           elevation={0}
           sx={{
             flex: 1,
+            width: "100%",
+            minWidth: 0,
+
             minHeight: 0,
+
             display: "flex",
+
             flexDirection: "column",
+
             overflow: "hidden",
+
             borderRadius: { xs: 0, sm: 3 },
+
             border: {
               xs: "none",
+
               sm: `1px solid ${C.border}`,
             },
           }}
         >
           {/* Chat header */}
+
           <Box
             sx={{
               px: { xs: 2, sm: 3 },
+
               py: 2,
+
               bgcolor: C.white,
+
               borderBottom: `1px solid ${C.border}`,
             }}
           >
             <Stack spacing={2}>
               {/* Assistant information */}
+
               <Stack
                 direction="row"
                 spacing={1.5}
@@ -569,20 +602,26 @@ export default function CoachChatPage() {
                 <Avatar
                   sx={{
                     width: 44,
+
                     height: 44,
+
                     bgcolor: C.greenLight,
+
                     color: C.green,
+
                     borderRadius: 2,
+
                     flexShrink: 0,
                   }}
                 >
                   <SmartToyOutlinedIcon />
                 </Avatar>
 
-                <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Box sx={{ flex: 1, width: "100%", minWidth: 0 }}>
                   <Typography
                     sx={{
                       fontWeight: 800,
+
                       color: C.navy,
                     }}
                   >
@@ -606,39 +645,70 @@ export default function CoachChatPage() {
                   size="small"
                   sx={{
                     bgcolor: C.greenLight,
+
                     color: C.green,
+
                     fontWeight: 700,
+
                     display: { xs: "none", sm: "flex" },
                   }}
                 />
               </Stack>
 
               {/* WhatsApp channel */}
+
               {/*  {event && (
+
                 <Box
+
                   sx={{
+
                     display: "flex",
+
                     justifyContent: { xs: "stretch", sm: "flex-end" },
+
                     "& .MuiButton-root": {
+
                       width: { xs: "100%", sm: "auto" },
+
                     },
+
                   }}
+
                 >
+
                   <WhatsAppRegistrationButton event={event} />
+
                 </Box>
+
               )}
+
               <Button
+
                 variant="text"
+
                 size="small"
+
                 onClick={() => {
+
+                  sessionIdRef.current = crypto.randomUUID();
+
                   setEvent(null);
+
                   setMessages([]);
+
                   setDraft(null);
+
                   setStatus("idle");
+
                   setAwaitingFixtureTeamName(false);
+
                 }}
+
               >
+
                 Change Event
+
               </Button> */}
 
               <Stack
@@ -646,16 +716,24 @@ export default function CoachChatPage() {
                 spacing={1}
                 sx={{
                   pt: { xs: 1.5, md: 0 },
+
                   borderTop: {
                     xs: `1px solid ${C.border}`,
+
                     md: "none",
                   },
+
                   flexWrap: "wrap",
+
                   rowGap: 1,
+
                   alignItems: "center",
+
                   justifyContent: {
                     xs: "flex-end",
+
                     md: "flex-start",
+
                     lg: "space-between",
                   },
                 }}
@@ -665,17 +743,26 @@ export default function CoachChatPage() {
                   size="small"
                   startIcon={<ArrowBackIcon />}
                   onClick={() => {
+                    sessionIdRef.current = crypto.randomUUID();
+
                     setEvent(null);
+
                     setMessages([]);
+
                     setDraft(null);
+
                     setStatus("idle");
+
                     setAwaitingFixtureTeamName(false);
                   }}
                   sx={{
                     color: C.muted,
+
                     whiteSpace: "nowrap",
+
                     "&:hover": {
                       bgcolor: C.background,
+
                       color: C.navy,
                     },
                   }}
@@ -689,13 +776,19 @@ export default function CoachChatPage() {
           </Box>
 
           {/* Scrollable conversation */}
+
           <Box
             sx={{
               flex: 1,
+
               minHeight: 0,
+
               overflowY: "auto",
+
               px: { xs: 2, sm: 3 },
+
               py: 3,
+
               bgcolor: C.background,
             }}
           >
@@ -712,15 +805,21 @@ export default function CoachChatPage() {
             )}
 
             {/* Welcome section */}
+
             {event && (
               <Box sx={{ textAlign: "center", mb: 4 }}>
                 <Avatar
                   sx={{
                     bgcolor: C.greenLight,
+
                     color: C.green,
+
                     width: 56,
+
                     height: 56,
+
                     mx: "auto",
+
                     mb: 2,
                   }}
                 >
@@ -750,6 +849,7 @@ export default function CoachChatPage() {
             )}
 
             {/* Conversation messages */}
+
             {messages.map((message, index) => {
               const isLatest = index === messages.length - 1;
 
@@ -770,6 +870,7 @@ export default function CoachChatPage() {
             })}
 
             {/* Typing indicator */}
+
             {loading && (
               <Stack
                 direction="row"
@@ -779,8 +880,11 @@ export default function CoachChatPage() {
                 <Avatar
                   sx={{
                     width: 34,
+
                     height: 34,
+
                     bgcolor: C.greenLight,
+
                     color: C.green,
                   }}
                 >
@@ -791,7 +895,9 @@ export default function CoachChatPage() {
                   elevation={0}
                   sx={{
                     p: 2,
+
                     borderRadius: 3,
+
                     color: C.muted,
                   }}
                 >
@@ -803,6 +909,7 @@ export default function CoachChatPage() {
             )}
 
             {/* Registration confirmation */}
+
             {status === "review" && draft && (
               <RegistrationActions
                 onConfirm={() => void handleConfirm()}
@@ -812,6 +919,7 @@ export default function CoachChatPage() {
             )}
 
             {/* Saving state */}
+
             {saving && (
               <Stack
                 direction="row"
@@ -819,6 +927,7 @@ export default function CoachChatPage() {
                 sx={{ p: 2, alignItems: "center" }}
               >
                 <CircularProgress size={18} />
+
                 <Typography variant="body2">
                   Submitting registration...
                 </Typography>
@@ -829,6 +938,7 @@ export default function CoachChatPage() {
           </Box>
 
           {/* Message input */}
+
           <ChatInput
             onSend={handleSend}
             disabled={!event || busy || status === "review"}
@@ -838,15 +948,18 @@ export default function CoachChatPage() {
             variant="caption"
             sx={{
               textAlign: "center",
+
               pb: 1.5,
+
               bgcolor: C.white,
+
               color: C.muted,
             }}
           >
             Powered by Amusema SportsHub
           </Typography>
         </Paper>
-      </Container>
+      </Box>
     </Box>
   );
 }

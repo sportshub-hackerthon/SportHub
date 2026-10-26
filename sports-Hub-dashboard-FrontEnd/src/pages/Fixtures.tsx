@@ -77,7 +77,7 @@ export default function Fixtures() {
     setGenerating(true);
     setGenerateError("");
     try {
-      const generated = await fixturesApi.generate(selectedEvent.id, 1, selectedEvent.startDate);
+      const generated = await fixturesApi.generate(selectedEvent.id, 0);
       setFixtures(generated);
     } catch (e: unknown) {
       setGenerateError(e instanceof Error ? e.message : "Failed to generate fixtures.");
