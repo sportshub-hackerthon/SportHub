@@ -1,17 +1,17 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Button } from "@mui/material";
-import { useAuth } from "react-oidc-context";
-import { clientId, cognitoDomain } from "./cognitoConfig";
+//import { useAuth } from "react-oidc-context";
+//import { clientId, cognitoDomain } from "./cognitoConfig";
 
 export default function SignOutButton() {
-  const auth = useAuth();
-  const handleSignOut2 = async () => {
+  //const auth = useAuth();
+  /* const handleSignOut2 = async () => {
     await auth.removeUser();
     const url = new URL(`${cognitoDomain}/logout`);
     url.searchParams.set("client_id", clientId);
     url.searchParams.set("logout_uri", `${window.location.origin}/`);
     window.location.assign(url.toString());
-  };
+  }; */
 
   const handleSignOut = () => {
   window.location.replace(
