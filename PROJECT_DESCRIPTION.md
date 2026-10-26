@@ -56,143 +56,84 @@ SportHub provides an **AI-powered conversational platform** accessible via Whats
 
 ## 🏗️ Technical Architecture
 
-### Architecture Diagram
+### High-Level System Design
 
 ```mermaid
 graph TB
-    subgraph "User Interface Layer"
-        WA[WhatsApp User<br/>+1 415 523 8886]
-        WEB[Web Dashboard<br/>Future]
+    subgraph "User Layer"
+        WA[WhatsApp Users<br/>+27 69 674 9685]
+        WEB[Web Dashboard<br/>Future Expansion]
     end
 
-    subgraph "Communication Gateway"
-        TWILIO[AWS End User Messaging Social (WhatsApp)<br/>Business API]
+    subgraph "AWS Cloud Services"
+        SOCIAL[AWS End User Messaging Social<br/>WhatsApp Business API]
+        
+        subgraph "AI Processing"
+            BEDROCK[AWS Bedrock AgentCore<br/>Claude Sonnet 4.5 v1]
+            LAMBDA[AWS Lambda<br/>Bedrock Proxy]
+        end
+        
+        API[Backend API<br/>.NET 8]
+        RDS[(AWS RDS MySQL<br/>Tournament Data)]
     end
 
-    subgraph "AWS Cloud Infrastructure"
-        subgraph "Compute Layer"
-            LAMBDA[AWS Lambda<br/>Python 3.12<br/>Bedrock Proxy]
-            API[.NET 8 Backend API<br/>Render.com<br/>RESTful Endpoints]
-        end
-        
-        subgraph "AI & Intelligence"
-            BEDROCK[AWS Bedrock<br/>AgentCore Harness]
-            CLAUDE[Claude Sonnet 4.5 v1<br/>Conversational AI]
-        end
-        
-        subgraph "Data Layer"
-            RDS[(AWS RDS MySQL<br/>eu-west-1<br/>Teams, Events,<br/>Registrations)]
-        end
-        
-        subgraph "Notification Services"
-            SES[AWS SES<br/>Email Service<br/>Confirmation Emails]
-        end
-        
-        subgraph "Security & Access"
-            IAM[AWS IAM Roles<br/>Lambda Permissions]
-        end
-    end
-
-    %% User to Gateway
-    WA -->|Send Message| TWILIO
-    TWILIO -->|POST Webhook| API
-    
-    %% API orchestration
-    API -->|Store Data| RDS
-    API -->|Query Data| RDS
-    API -->|Invoke AI| LAMBDA
-    API -->|Send Email| SES
-    
-    %% Lambda to Bedrock
-    LAMBDA -->|invoke_harness| BEDROCK
-    BEDROCK -->|Process with| CLAUDE
-    CLAUDE -->|Response Stream| BEDROCK
-    BEDROCK -->|AI Response| LAMBDA
-    
-    %% Response flow
-    LAMBDA -->|JSON Response| API
-    API -->|WhatsApp API Response| TWILIO
-    TWILIO -->|Deliver Message| WA
-    SES -->|Email| WA
-    
-    %% Security
-    IAM -.->|Authorize| LAMBDA
-    IAM -.->|Authorize| BEDROCK
-    
-    %% Future channel
+    %% Flow
+    WA <-->|Natural Language| SOCIAL
+    SOCIAL <-->|Webhook| API
+    API -->|AI Requests| LAMBDA
+    LAMBDA <-->|Invoke Harness| BEDROCK
+    API <-->|Store/Query| RDS
     WEB -.->|Future| API
 
     %% Styling
-    classDef aws fill:#FF9900,stroke:#232F3E,stroke-width:2px,color:#232F3E
-    classDef compute fill:#3F8624,stroke:#232F3E,stroke-width:2px,color:#fff
+    classDef aws fill:#FF9900,stroke:#232F3E,stroke-width:2px,color:#fff
     classDef ai fill:#8B5CF6,stroke:#232F3E,stroke-width:2px,color:#fff
-    classDef data fill:#3B48CC,stroke:#232F3E,stroke-width:2px,color:#fff
-    classDef external fill:#06B6D4,stroke:#232F3E,stroke-width:2px,color:#232F3E
+    classDef user fill:#06B6D4,stroke:#232F3E,stroke-width:2px,color:#232F3E
     
-    class LAMBDA,API compute
-    class BEDROCK,CLAUDE ai
-    class RDS data
-    class SES,IAM aws
-    class TWILIO,WA,WEB external
+    class SOCIAL,LAMBDA,RDS aws
+    class BEDROCK ai
+    class WA,WEB,API user
 ```
 
-### Core Components
+### Core Technology Stack
 
-**1. AWS Bedrock AgentCore Harness**
-- Custom agent built using Claude Sonnet 4.5 v1
-- Harness ARN: `arn:aws:bedrock-agentcore:eu-west-1:262683589693:harness/amusema_sports_agent-Azjer58UxL`
-- Handles natural language processing, intent recognition, and conversational flow
-- Session management with 33+ character identifiers per user
+**AWS Services (2 CDS Services):**
+1. **AWS Bedrock AgentCore** - Conversational AI with Claude Sonnet 4.5 v1
+2. **AWS End User Messaging Social** - WhatsApp Business API integration
+3. **AWS Lambda** - Serverless Bedrock proxy (Python 3.12)
+4. **AWS RDS MySQL** - Tournament data storage
 
-**2. AWS Lambda Function (Python 3.12)**
-- Serverless proxy for Bedrock API calls
-- Eliminates cold starts (vs traditional hosting)
-- Auto-scales to handle tournament registration spikes
-- Cost-efficient (pay per request, not per hour)
+**Backend:**
+- .NET 8 REST API with clean architecture
+- Entity Framework Core for data access
+- Async/await for performance
 
-**3. .NET 8 Backend API**
-- RESTful API serving both WhatsApp and web clients
-- Clean architecture (Domain, Application, Infrastructure, API layers)
-- Repository pattern for data access
-- Async/await for optimal performance
+**Communication:**
+- WhatsApp as primary channel (+27 69 674 9685 - South African number)
+- Natural language processing via Bedrock
+- Real-time webhook integration
 
-**4. AWS RDS MySQL Database**
-- Normalized schema (events, teams, registrations, fixtures, notifications)
-- Migration scripts for easy setup
-- Region: eu-west-1 (low latency to South Africa)
+### Data Flow (Simplified)
 
-**5. AWS End User Messaging Social (WhatsApp) Business API**
-- WhatsApp API responses for reliable message delivery
-- Handles 1600-character limit automatically (truncates long responses)
-- Webhook integration for bi-directional communication
-
-**6. AWS SES Email Service**
-- Sends professional registration confirmation emails
-- Includes event details, team information, and coach contact
-- Fallback communication channel (when WhatsApp unavailable)
-- HTML formatted emails with branding
-
-### Data Flow
-
-**Registration Flow:**
+**User Message → AI Response:**
 ```
-User (WhatsApp) 
-    → AWS WhatsApp Webhook 
-    → C# Backend API (Render)
-    → AWS Lambda (Python)
-    → AWS Bedrock AgentCore
-    → Claude Sonnet 4.5 v1 response
-    → Back through stack to WhatsApp
-    → AWS SES sends confirmation email
+WhatsApp User
+    ↓
+AWS End User Messaging Social
+    ↓
+.NET Backend API
+    ↓
+AWS Lambda (Bedrock Proxy)
+    ↓
+AWS Bedrock AgentCore (Claude Sonnet 4.5)
+    ↓
+Response back through stack to WhatsApp
 ```
 
-**Fixture Query Flow:**
-```
-User: "fixtures"
-    → Backend queries RDS MySQL
-    → Returns team fixtures
-    → Formats and sends via WhatsApp
-```
+**Database Operations:**
+- All registrations, fixtures, events stored in AWS RDS MySQL
+- Real-time validation checks before confirming registrations
+- Optimized queries for fast fixture retrieval
 
 ---
 
@@ -291,122 +232,58 @@ Bot: "Unfortunately, the Women Soccer Launch is fully booked.
 - Prevents overbooking
 - Suggests alternatives
 
-### 5. Automatic Fixture Generation (Admin)
+### 5. Automatic Fixture Generation
 
-**Functionality:**
-```
-POST /api/Fixtures/generate/{eventId}
+**Smart Algorithm:**
+- Generates complete tournament schedules in seconds
+- Round-robin format (each team plays every other team once)
+- Conflict detection (no team plays twice at same time)
+- Optimal pitch allocation
+- Fair time distribution across all teams
 
-Algorithm:
-1. Fetch all registered teams for event
-2. Group by age group/division
-3. Generate round-robin matches (each team plays every other team)
-4. Allocate pitches optimally
-5. Space matches with appropriate intervals
-6. Detect conflicts (team playing twice simultaneously)
-7. Save fixtures to database
-8. Trigger notifications to all coaches
-```
+**Benefits:**
+- Saves 4+ hours of manual work
+- Eliminates human error
+- Instant notifications to all teams
+- Easy regeneration if needed
 
-**Output:**
-- Complete match schedule with dates, times, venues
-- Conflict-free (validated automatically)
-- Fair distribution (equal matches for all teams)
+### 6. Multi-Channel API
 
-### 6. Multi-Channel API Support
+Backend API serves multiple clients:
+- WhatsApp bot (current)
+- Web dashboard (future)
+- Mobile app (future)
+- Third-party integrations (future)
 
-**Endpoints:**
-
-| Endpoint | Purpose | Used By |
-|----------|---------|---------|
-| `POST /api/whatsapp/webhook` | WhatsApp message handler | AWS WhatsApp |
-| `POST /api/chat/invoke` | General web chat | Web dashboard |
-| `POST /api/chat/invoke-event` | Event-specific chat | Web dashboard |
-| `GET/POST /api/Events` | Event CRUD | Admin panel |
-| `GET/POST /api/Teams` | Team management | Admin panel |
-| `GET /api/Fixtures/{eventId}` | Fetch fixtures | All clients |
-| `POST /api/Registrations` | Submit registration | All clients |
-
-### 7. Session Management
-
-**Implementation:**
-- Session ID format: `whatsapp-session-{phoneNumber}000...` (min 33 chars - AWS requirement)
-- Stored in Bedrock AgentCore memory
-- Maintains conversation context across messages
-- Expires after inactivity (AWS-managed)
-
-### 8. Error Handling & Fallbacks
-
-**Graceful Degradation:**
-```csharp
-try {
-    // Call Bedrock via Lambda
-    response = await bedrock.InvokeAsync(message, sessionId);
-} catch (Exception ex) {
-    _logger.LogError(ex, "Bedrock call failed");
-    // Fallback to friendly default response
-    response = "I'm here to help! Try asking about events, fixtures, or registration.";
-}
-```
-
-**Character Limit Handling:**
-```csharp
-// AWS End User Messaging Social (WhatsApp) limit: 1600 characters
-if (response.Length > 1500) {
-    response = response.Substring(0, 1500) + 
-               "...\n\n(Message truncated. Ask for specific details!)";
-}
-```
+Unified data model ensures consistency across all channels.
 
 ---
 
-## 📊 Technical Highlights
+## 📊 Key Technical Achievements
 
-### AWS Bedrock Integration
+### AWS Bedrock AgentCore Integration
+- Built custom conversational agent using Claude Sonnet 4.5 v1
+- Handles complex natural language: context switching, corrections, multi-turn conversations
+- Session management maintains conversation history per user
+- Streaming responses for low-latency interactions
 
-**Why AgentCore Harness?**
-- Pre-built conversational framework
-- Session management built-in
-- Streaming responses for low latency
-- Production-ready error handling
+### Serverless Architecture Benefits
+- AWS Lambda auto-scales to handle registration spikes
+- Pay-per-use model (no idle server costs)
+- Fast cold starts (2-5 seconds)
+- Seamless integration with Bedrock
 
-**Implementation:**
-```python
-# Lambda function
-response = bedrock_client.invoke_harness(
-    harnessArn=HARNESS_ARN,
-    runtimeSessionId=session_id,
-    messages=[{
-        'role': 'user',
-        'content': [{'text': user_message}]
-    }]
-)
+### WhatsApp Business API
+- Production-ready integration with AWS End User Messaging Social
+- South African phone number (+27) for local accessibility
+- Reliable message delivery with webhook architecture
+- Character limit handling (1600 chars) with smart truncation
 
-# Stream response
-full_response = []
-for event in response['stream']:
-    if 'contentBlockDelta' in event:
-        delta = event['contentBlockDelta'].get('delta', {})
-        if 'text' in delta:
-            full_response.append(delta['text'])
-```
-
-### Performance Optimizations
-
-1. **Lambda Cold Starts**: 2-5 seconds (vs 30-60s on traditional hosting)
-2. **Database Connection Pooling**: Reuses connections across requests
-3. **Async Operations**: All I/O operations use async/await
-4. **Minimal Payloads**: DTOs optimized for wire size
-5. **Response Caching**: Event details cached (future enhancement)
-
-### Security & Reliability
-
-- ✅ HTTPS enforced (TLS 1.2+)
-- ✅ AWS IAM roles for Lambda (no hardcoded credentials)
-- ✅ SQL parameterization (prevents injection)
-- ✅ Input validation on all endpoints
-- ✅ Error logging without exposing internals
-- ✅ AWS WhatsApp signature verification (webhook security)
+### Database Design
+- Normalized schema for events, teams, registrations, fixtures
+- Optimized queries for real-time availability checks
+- Transaction support for data consistency
+- EU region (eu-west-1) for low latency to South Africa
 
 ---
 
@@ -452,15 +329,6 @@ for event in response['stream']:
 4. **Multi-Channel** - Same backend serves WhatsApp, web, future SMS/mobile app
 5. **Production-Ready** - Clean code, error handling, documentation, deployment automation
 
-### AWS Services Leveraged
-
-- ✅ **AWS Bedrock AgentCore** - Core conversational AI (primary CDS service)
-- ✅ **AWS SES (Simple Email Service)** - Registration confirmation emails (secondary CDS service)
-- ✅ **AWS Lambda** - Serverless compute for Bedrock proxy
-- ✅ **AWS RDS MySQL** - Managed database
-- ✅ **AWS IAM** - Security and permissions
-- ✅ **API Gateway** - Lambda HTTP API trigger
-
 ---
 
 ## 📈 Future Enhancements
@@ -487,32 +355,27 @@ for event in response['stream']:
 
 ---
 
-## 🎓 Learning Outcomes
+## 🎓 What We Learned
 
-### What We Built With AWS
+### AWS Technologies Mastered
+- **Bedrock AgentCore Harness** - Built production conversational AI agent from scratch
+- **AWS Lambda** - Serverless architecture for AI workload management
+- **AWS End User Messaging Social** - WhatsApp Business API integration
+- **Multi-Service Orchestration** - Connected Lambda, RDS, Bedrock, WhatsApp seamlessly
 
-1. **AgentCore Harness** - Custom conversational agent from scratch
-2. **Lambda Integration** - Serverless architecture for AI workloads
-3. **Multi-Service Orchestration** - Lambda, RDS, Bedrock working together
-4. **Production Deployment** - End-to-end system on AWS infrastructure
-
-### Technical Skills Demonstrated
-
-- ✅ AWS Bedrock API integration
-- ✅ Serverless architecture (Lambda, API Gateway)
-- ✅ RESTful API design (.NET 8)
-- ✅ Database design and optimization
-- ✅ Webhook integration (AWS WhatsApp)
-- ✅ Clean architecture principles
-- ✅ Error handling and logging
-- ✅ Performance optimization
-- ✅ Documentation and deployment automation
+### Technical Growth
+- Natural language processing and intent recognition
+- Webhook architecture for real-time messaging
+- Clean architecture patterns in .NET
+- Database optimization for tournament data
+- Error handling in distributed systems
+- Production deployment and monitoring
 
 ---
 
 ## 📞 Try It Yourself!
 
-**WhatsApp Bot:** Send `join wheel-thou` to `+1 415 523 8886`  
+**WhatsApp Bot:** Message `Hi` to **+27 69 674 9685** (South African number)  
 **GitHub:** https://github.com/sportshub-hackerthon/SportHub  
 **Live API:** https://sporthub-rng4.onrender.com
 
