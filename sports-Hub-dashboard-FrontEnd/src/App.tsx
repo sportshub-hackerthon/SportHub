@@ -6,11 +6,11 @@ import CreateEvent from "./pages/CreateEvent";
 import Teams from "./pages/Teams";
 import Fixtures from "./pages/Fixtures";
 import EventDetail from "./pages/EventDetail";
-import AuthGate from "./auth/AuthGate";
+//import AuthGate from "./auth/AuthGate";
 
 function App() {
   return (
-    <AuthGate>
+    //<AuthGate>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Login />} />
@@ -25,7 +25,7 @@ function App() {
           <Route path="/events/:id" element={<EventDetail />} />
         </Routes>
       </BrowserRouter>
-    </AuthGate>
+    //</AuthGate>
   );
 }
 
