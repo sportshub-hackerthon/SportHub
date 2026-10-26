@@ -6,7 +6,7 @@ import {
   Box,
   Button,
   CircularProgress,
-  Container,
+  //Container,
   IconButton,
   Paper,
   Stack,
@@ -114,15 +114,19 @@ export default function GeneralChatPage({ onBack }: GeneralChatPageProps) {
     >
       <SportsHubHeader />
 
-      <Container
-        maxWidth="md"
+     <Box
         sx={{
           flex: 1,
+          width: "70%",
+          minWidth: 0,
           minHeight: 0,
           display: "flex",
           flexDirection: "column",
-          py: { xs: 0, sm: 3 },
+          alignSelf:'center',
+          pt: { xs: 1, md: 3 },
+          pb: { xs: 0, md: 3 },
           px: { xs: 0, sm: 2 },
+          mx: { sx: 0, md: 2 },
         }}
       >
         <Paper
@@ -284,7 +288,7 @@ export default function GeneralChatPage({ onBack }: GeneralChatPageProps) {
             </Button>
           </Box>
         </Paper>
-      </Container>
+      </Box>
     </Box>
   );
 }

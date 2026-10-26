@@ -45,7 +45,7 @@ export default function ChatInput({
         disabled={disabled}
         sx={{
           "& .MuiOutlinedInput-root": {
-            borderRadius: 3,
+            borderRadius: 1,
             bgcolor: "#F3F6FA",
           },
         }}

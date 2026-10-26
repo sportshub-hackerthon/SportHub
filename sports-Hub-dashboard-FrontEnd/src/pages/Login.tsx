@@ -17,7 +17,9 @@ import SportsSoccerIcon from "@mui/icons-material/SportsSoccer";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
+
+import AdminPanelSettingsOutlinedIcon from "@mui/icons-material/AdminPanelSettingsOutlined";
+import SportsOutlinedIcon from "@mui/icons-material/SportsOutlined";
 
 const COACH_URL =
   "https://d1rlg8deipj3ua.cloudfront.net/";
@@ -203,6 +205,7 @@ export default function Login() {
             variant="contained"
             size="large"
             onClick={handleOrganiserLogin}
+            startIcon={<AdminPanelSettingsOutlinedIcon />}
             endIcon={<ArrowForwardIcon />}
             sx={{
               mt: 3,
@@ -234,7 +237,7 @@ export default function Login() {
             fullWidth
             variant="outlined"
             size="large"
-            startIcon={<GroupsOutlinedIcon />}
+            startIcon={<SportsOutlinedIcon />}
             endIcon={<ArrowForwardIcon />}
             onClick={handleCoachLogin}
             sx={{
@@ -251,7 +254,7 @@ export default function Login() {
               },
             }}
           >
-            Continue as Coach
+            Sign in as Coach
           </Button>
 
           <Typography

@@ -10,6 +10,7 @@ import {
   CircularProgress,
   Grid,
   MenuItem,
+  LinearProgress,
   Stack,
   TextField,
   Typography,
@@ -17,9 +18,11 @@ import {
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutlined";
-import SportsSoccerIcon from "@mui/icons-material/SportsSoccer";
+//import SportsSoccerIcon from "@mui/icons-material/SportsSoccer";
 
 import type { SportsHubEvent } from "../services/agentEventApi";
+import { getRegistrationStatus } from "../services/registrationApi";
+import type { RegistrationStatusResponse } from "../types/registrationStatus";
 
 interface Props {
   loadEvents: () => Promise<SportsHubEvent[]>;
@@ -59,6 +62,7 @@ export default function EventSelector({ loadEvents, onSelect }: Props) {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [sport, setSport] = useState("All");
+  const [registrationByEvent, setRegistrationByEvent] = useState<Record<number, RegistrationStatusResponse>>({});
 
   useEffect(() => {
     let active = true;
@@ -68,7 +72,20 @@ export default function EventSelector({ loadEvents, onSelect }: Props) {
       try {
         const result = await loadEvents();
         if (!Array.isArray(result)) throw new Error("Events API did not return an array");
-        if (active) setEvents(result);
+        if (!active) return;
+        setEvents(result);
+        // Load real registration totals independently so one failing event does not break the page.
+        const statuses = await Promise.allSettled(
+          result.map((event) => getRegistrationStatus(event.id))
+        );
+        if (!active) return;
+        const next: Record<number, RegistrationStatusResponse> = {};
+        statuses.forEach((status, index) => {
+          if (status.status === "fulfilled") {
+            next[result[index].id] = status.value;
+          }
+        });
+        setRegistrationByEvent(next);
       } catch (err) {
         console.error("Failed to load SportsHub events:", err);
         if (active) setError("Unable to load events. Please try again.");
@@ -96,8 +113,8 @@ export default function EventSelector({ loadEvents, onSelect }: Props) {
   }, [events, search, sport]);
 
   return (
-    <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", bgcolor: "#F3F6FA", p: { xs: 2, md: 4 } }}>
-      <Box sx={{ maxWidth: 1200, mx: "auto" }}>
+    <Box sx={{ flex: 1, width: "100%", minWidth: 0, minHeight: 0, overflowY: "auto", bgcolor: "#F3F6FA", p: { xs: 2, md: 8 } }}>
+      <Box sx={{ width: "100%", maxWidth: "none" }}>
         <Box sx={{ mb: 4 }}>
           <Typography variant="h4" sx={{ fontWeight: 800, color: "#101D33", mb: 1 }}>
             Explore Sports Events
@@ -167,17 +184,40 @@ export default function EventSelector({ loadEvents, onSelect }: Props) {
                       </Box>
                     )}
                     <Box sx={{ mt: "auto" }}>
-                      <Stack direction="row" spacing={1} sx={{ mb: 2, alignItems:"center" }}>
+                      {(() => {
+                        const registration = registrationByEvent[event.id];
+                        const capacity = registration?.maxTeams ?? event.numberOfTeams;
+                        const registered = registration?.registeredTeams;
+                        const valid = typeof registered === "number" && typeof capacity === "number" && capacity > 0;
+                        const percentage = valid ? Math.min(100, Math.max(0, Math.round((registered / capacity) * 100))) : 0;
+                        return (
+                          <Box sx={{ mb: 2 }}>
+                            <Stack direction="row"  spacing={1} sx={{ mb: 0.75, justifyContent:"space-between" }}>
+                              <Typography variant="body2" sx={{ fontWeight: 700, color: "#101D33" }}>
+                                {valid ? `${registered} / ${capacity} teams registered` : "Registration numbers unavailable"}
+                              </Typography>
+                              {valid && <Typography variant="body2" sx={{ color: "text.secondary" }}>{percentage}%</Typography>}
+                            </Stack>
+                            <LinearProgress
+                              variant="determinate"
+                              value={percentage}
+                              aria-label={`Registration progress for ${event.name}`}
+                              sx={{ height: 7, borderRadius: 8, bgcolor: "#E2E8F0", "& .MuiLinearProgress-bar": { borderRadius: 8, bgcolor: "#079447" } }}
+                            />
+                          </Box>
+                        );
+                      })()}
+                      {/* <Stack direction="row" spacing={1}  sx={{ mb: 2, alignItems:"center" }}>
                         <SportsSoccerIcon sx={{ fontSize: 18, color: "#079447" }} />
                         <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                          {event.numberOfTeams ?? "—"} teams · {event.numberOfPitches ?? "—"} pitches
+                          {event.numberOfPitches ?? "—"} pitches
                         </Typography>
-                      </Stack>
+                      </Stack> */}
                       <Button fullWidth variant="contained" startIcon={<ChatBubbleOutlineIcon />}
                         onClick={() => void onSelect(event.id)}
                         sx={{ bgcolor: "#079447", "&:hover": { bgcolor: "#06783A" },
                           borderRadius: 1, py: 1.2, textTransform: "none", fontWeight: 700 }}>
-                        Open Event Chat
+                        Open Event Chat Ai
                       </Button>
                     </Box>
                   </CardContent>
@@ -187,7 +227,7 @@ export default function EventSelector({ loadEvents, onSelect }: Props) {
           </Grid>
         )}
         {!loading && !error && filteredEvents.length === 0 && (
-          <Card sx={{ p: 5, textAlign: "center", borderRadius: 3 }}>
+          <Card sx={{ p: 5, textAlign: "center", borderRadius: 1 }}>
             <Typography variant="h6" sx={{ fontWeight: 700 }}>No tournaments found</Typography>
             <Typography color="text.secondary" sx={{ mt: 1 }}>Try another search or sport category.</Typography>
           </Card>

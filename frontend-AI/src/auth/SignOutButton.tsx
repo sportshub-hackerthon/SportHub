@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Button } from "@mui/material";
 //import { useAuth } from "react-oidc-context";
 //import { clientId, cognitoDomain } from "./cognitoConfig";

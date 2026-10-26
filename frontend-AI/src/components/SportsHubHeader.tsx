@@ -13,15 +13,15 @@ export default function SportsHubHeader() {
     >
       <Toolbar
         sx={{
-          maxWidth: 1100,
+          maxWidth: "100%",
           width: "100%",
           mx: "auto",
-          px: { xs: 2, sm: 3 },
+          px: { xs: 2, sm: 3, md: 4 },
           py: 1.5,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          gap: 2,
+          gap: 1,
         }}
       >
         {/* SportsHub branding */}

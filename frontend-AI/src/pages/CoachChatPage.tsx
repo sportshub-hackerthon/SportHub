@@ -7,7 +7,6 @@ import {
   Button,
   Chip,
   CircularProgress,
-  Container,
   Paper,
   Stack,
   Typography,
@@ -39,7 +38,8 @@ import {
   getSportsHubEvents,
 } from "../services/agentEventApi";
 
-import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutlined";
+//import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutlined";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 
 import GeneralChatPage from "./GeneralChatPage";
 
@@ -493,7 +493,7 @@ export default function CoachChatPage() {
 
               zIndex: 1200,
 
-              bgcolor: C.green,
+              bgcolor: "#101D33",
 
               color: C.white,
 
@@ -504,17 +504,18 @@ export default function CoachChatPage() {
               boxShadow: "0 8px 24px rgba(7,148,71,0.28)",
 
               "&:hover": {
-                bgcolor: C.greenHover,
+                bgcolor: "#101D33",
 
                 transform: "translateY(-3px)",
 
                 boxShadow: "0 12px 28px rgba(7,148,71,0.36)",
               },
+              borderRadius: 1,
 
               transition: "all 0.2s ease",
             }}
           >
-            <ChatBubbleOutlineIcon sx={{ mr: 1 }} />
+            <AutoAwesomeIcon  sx={{ mr: 1 }} />
             General AI Chat
           </Fab>
         </Tooltip>
@@ -538,28 +539,27 @@ export default function CoachChatPage() {
     >
       <SportsHubHeader />
 
-      <Container
-        maxWidth="md"
+      <Box
         sx={{
           flex: 1,
-
+          width: "70%",
+          minWidth: 0,
           minHeight: 0,
-
           display: "flex",
-
           flexDirection: "column",
-
+          alignSelf:'center',
           pt: { xs: 1, md: 3 },
-
           pb: { xs: 0, md: 3 },
-
           px: { xs: 0, sm: 2 },
+          mx: { sx: 0, md: 2 },
         }}
       >
         <Paper
           elevation={0}
           sx={{
             flex: 1,
+            width: "100%",
+            minWidth: 0,
 
             minHeight: 0,
 
@@ -617,7 +617,7 @@ export default function CoachChatPage() {
                   <SmartToyOutlinedIcon />
                 </Avatar>
 
-                <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Box sx={{ flex: 1, width: "100%", minWidth: 0 }}>
                   <Typography
                     sx={{
                       fontWeight: 800,
@@ -959,7 +959,7 @@ export default function CoachChatPage() {
             Powered by Amusema SportsHub
           </Typography>
         </Paper>
-      </Container>
+      </Box>
     </Box>
   );
 }
