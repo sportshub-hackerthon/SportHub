@@ -39,13 +39,13 @@ export default function ChatInput({
       <TextField
         fullWidth
         size="small"
-        placeholder="Message Amusema SportsHub..."
+        placeholder="Message Amusema AI..."
         value={message}
         onChange={(event) => setMessage(event.target.value)}
         disabled={disabled}
         sx={{
           "& .MuiOutlinedInput-root": {
-            borderRadius: 3,
+            borderRadius: 1,
             bgcolor: "#F3F6FA",
           },
         }}

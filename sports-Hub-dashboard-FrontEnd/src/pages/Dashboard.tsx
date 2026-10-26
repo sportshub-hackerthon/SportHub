@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -26,7 +25,9 @@ import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 
 import Sidebar from "../components/Sidebar";
 import { eventsApi, registrationsApi, type EventResponse } from "../api";
-
+import { Fab, Tooltip } from "@mui/material";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import CreateEventAiChat from "../components/CreateEventAiChat";
 // Generic sport images keyed by event type keyword
 const SPORT_IMAGES: Record<string, string> = {
   football: "/football.jpg",
@@ -47,30 +48,38 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   const [events, setEvents] = useState<EventResponse[]>([]);
-  const [registeredCounts, setRegisteredCounts] = useState<Record<number, number>>({});
+  const [registeredCounts, setRegisteredCounts] = useState<
+    Record<number, number>
+  >({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [sport, setSport] = useState("All");
+  const [aiChatOpen, setAiChatOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     // Load events immediately — cards render right away
-    eventsApi.list()
+    eventsApi
+      .list()
       .then((evs) => {
         setEvents(evs);
         setLoading(false);
         // Fetch registration counts in the background after cards are visible
         Promise.all(
           evs.map((e) =>
-            registrationsApi.getByEvent(e.id)
+            registrationsApi
+              .getByEvent(e.id)
               .then((regs) => ({ id: e.id, count: regs.length }))
-              .catch(() => ({ id: e.id, count: 0 }))
-          )
+              .catch(() => ({ id: e.id, count: 0 })),
+          ),
         ).then((counts) =>
-          setRegisteredCounts(Object.fromEntries(counts.map((c) => [c.id, c.count])))
+          setRegisteredCounts(
+            Object.fromEntries(counts.map((c) => [c.id, c.count])),
+          ),
         );
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [refreshKey]);
 
   const sports = ["All", ...new Set(events.map((e) => e.eventType))];
 
@@ -84,7 +93,10 @@ export default function Dashboard() {
     });
   }, [events, search, sport]);
 
-  const totalTeams = Object.values(registeredCounts).reduce((sum, c) => sum + c, 0);
+  const totalTeams = Object.values(registeredCounts).reduce(
+    (sum, c) => sum + c,
+    0,
+  );
 
   const formatDate = (date: string) =>
     new Date(`${date}T12:00:00`).toLocaleDateString("en-ZA", {
@@ -94,12 +106,26 @@ export default function Dashboard() {
     });
 
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh", width: "100%", bgcolor: "#F3F6FA" }}>
+    <Box
+      sx={{
+        display: "flex",
+        minHeight: "100vh",
+        width: "100%",
+        bgcolor: "#F3F6FA",
+      }}
+    >
       <Sidebar />
 
       <Box
         component="main"
-        sx={{ flex: 1, minWidth: 0, ml: "240px", p: { xs: 2, md: 4 }, bgcolor: "#F3F6FA", boxSizing: "border-box" }}
+        sx={{
+          flex: 1,
+          minWidth: 0,
+          ml: "240px",
+          p: { xs: 2, md: 4 },
+          bgcolor: "#F3F6FA",
+          boxSizing: "border-box",
+        }}
       >
         {/* Page heading */}
         <Box
@@ -142,20 +168,59 @@ export default function Dashboard() {
         {/* Summary cards */}
         <Grid container spacing={2} sx={{ mb: 4 }}>
           {[
-            { label: "Total Tournaments", value: events.length, icon: <EmojiEventsIcon /> },
-            { label: "Upcoming Events", value: events.length, icon: <CalendarMonthIcon /> },
-            { label: "Registered Teams", value: totalTeams, icon: <GroupsIcon /> },
-            { label: "Sports Categories", value: sports.length - 1, icon: <SportsSoccerIcon /> },
+            {
+              label: "Total Tournaments",
+              value: events.length,
+              icon: <EmojiEventsIcon />,
+            },
+            {
+              label: "Upcoming Events",
+              value: events.length,
+              icon: <CalendarMonthIcon />,
+            },
+            {
+              label: "Registered Teams",
+              value: totalTeams,
+              icon: <GroupsIcon />,
+            },
+            {
+              label: "Sports Categories",
+              value: sports.length - 1,
+              icon: <SportsSoccerIcon />,
+            },
           ].map((stat) => (
             <Grid size={{ xs: 12, sm: 6, lg: 3 }} key={stat.label}>
-              <Card sx={{ borderRadius: 3, height: "100%", boxShadow: "0 3px 15px rgba(16,29,51,0.05)" }}>
-                <CardContent sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-                  <Box sx={{ bgcolor: "#DDF7E7", color: "#079447", borderRadius: 2, p: 1.5, display: "flex" }}>
+              <Card
+                sx={{
+                  borderRadius: 3,
+                  height: "100%",
+                  boxShadow: "0 3px 15px rgba(16,29,51,0.05)",
+                }}
+              >
+                <CardContent
+                  sx={{ display: "flex", gap: 2, alignItems: "center" }}
+                >
+                  <Box
+                    sx={{
+                      bgcolor: "#DDF7E7",
+                      color: "#079447",
+                      borderRadius: 2,
+                      p: 1.5,
+                      display: "flex",
+                    }}
+                  >
                     {stat.icon}
                   </Box>
                   <Box>
-                    <Typography variant="body2" color="text.secondary">{stat.label}</Typography>
-                    <Typography variant="h4" sx={{ fontWeight: 800, color: "#101D33" }}>{stat.value}</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {stat.label}
+                    </Typography>
+                    <Typography
+                      variant="h4"
+                      sx={{ fontWeight: 800, color: "#101D33" }}
+                    >
+                      {stat.value}
+                    </Typography>
                   </Box>
                 </CardContent>
               </Card>
@@ -212,9 +277,13 @@ export default function Dashboard() {
           <Grid container spacing={3}>
             {filteredEvents.map((item) => {
               const registered = registeredCounts[item.id] ?? 0;
-              const progress = item.numberOfTeams > 0
-                ? Math.min(100, Math.round((registered / item.numberOfTeams) * 100))
-                : 0;
+              const progress =
+                item.numberOfTeams > 0
+                  ? Math.min(
+                      100,
+                      Math.round((registered / item.numberOfTeams) * 100),
+                    )
+                  : 0;
 
               return (
                 <Grid size={{ xs: 12, sm: 6, xl: 4 }} key={item.id}>
@@ -227,13 +296,19 @@ export default function Dashboard() {
                       overflow: "hidden",
                       boxShadow: "0 4px 18px rgba(16,29,51,0.07)",
                       transition: "transform 0.2s, box-shadow 0.2s",
-                      "&:hover": { transform: "translateY(-4px)", boxShadow: "0 10px 28px rgba(16,29,51,0.12)" },
+                      "&:hover": {
+                        transform: "translateY(-4px)",
+                        boxShadow: "0 10px 28px rgba(16,29,51,0.12)",
+                      },
                     }}
                   >
                     <Box sx={{ position: "relative" }}>
                       <CardMedia
                         component="img"
-                        image={getSportImage(item.sportCategory, item.eventType)}
+                        image={getSportImage(
+                          item.sportCategory,
+                          item.eventType,
+                        )}
                         alt={item.eventType}
                         loading="lazy"
                         sx={{ height: 160, objectFit: "cover" }}
@@ -252,31 +327,66 @@ export default function Dashboard() {
                       />
                     </Box>
 
-                    <CardContent sx={{ p: 2.5, display: "flex", flexDirection: "column", flexGrow: 1 }}>
-                      <Typography variant="h6" sx={{ fontWeight: 800, color: "#101D33", mb: 2 }}>
+                    <CardContent
+                      sx={{
+                        p: 2.5,
+                        display: "flex",
+                        flexDirection: "column",
+                        flexGrow: 1,
+                      }}
+                    >
+                      <Typography
+                        variant="h6"
+                        sx={{ fontWeight: 800, color: "#101D33", mb: 2 }}
+                      >
                         {item.name}
                       </Typography>
 
                       <Box sx={{ display: "flex", gap: 1, mb: 1.5 }}>
                         <CalendarMonthIcon fontSize="small" color="action" />
-                        <Typography variant="body2">{formatDate(item.startDate)}</Typography>
+                        <Typography variant="body2">
+                          {formatDate(item.startDate)}
+                        </Typography>
                       </Box>
 
                       <Box sx={{ display: "flex", gap: 1, mb: 2 }}>
-                        <LocationOnOutlinedIcon fontSize="small" color="action" />
-                        <Typography variant="body2" color="text.secondary">{item.venue}</Typography>
+                        <LocationOnOutlinedIcon
+                          fontSize="small"
+                          color="action"
+                        />
+                        <Typography variant="body2" color="text.secondary">
+                          {item.venue}
+                        </Typography>
                       </Box>
 
                       {item.ageGroups && (
-                        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 2 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            gap: 1,
+                            flexWrap: "wrap",
+                            mb: 2,
+                          }}
+                        >
                           {item.ageGroups.split(",").map((age) => (
-                            <Chip key={age} label={age.trim()} size="small" variant="outlined" />
+                            <Chip
+                              key={age}
+                              label={age.trim()}
+                              size="small"
+                              variant="outlined"
+                            />
                           ))}
                         </Box>
                       )}
 
                       <Box sx={{ mt: "auto" }}>
-                        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            mb: 1,
+                          }}
+                        >
                           <Typography variant="body2" sx={{ fontWeight: 700 }}>
                             {registered} / {item.numberOfTeams} teams registered
                           </Typography>
@@ -293,7 +403,10 @@ export default function Dashboard() {
                             borderRadius: 5,
                             mb: 2.5,
                             bgcolor: "#E2E8F0",
-                            "& .MuiLinearProgress-bar": { bgcolor: "#079447", borderRadius: 5 },
+                            "& .MuiLinearProgress-bar": {
+                              bgcolor: "#079447",
+                              borderRadius: 5,
+                            },
                           }}
                         />
 
@@ -323,13 +436,56 @@ export default function Dashboard() {
 
         {!loading && filteredEvents.length === 0 && (
           <Card sx={{ p: 5, textAlign: "center", borderRadius: 3 }}>
-            <Typography variant="h6" sx={{ fontWeight: 700 }}>No tournaments found</Typography>
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              No tournaments found
+            </Typography>
             <Typography color="text.secondary" sx={{ mt: 1 }}>
               Try another search or select a different sport.
             </Typography>
           </Card>
         )}
       </Box>
+
+      {/* Floating AI tournament creation button */}
+      <Tooltip title="Create a tournament using SportsHub AI" placement="left">
+        <Fab
+          variant="extended"
+          aria-label="Create tournament with AI"
+          onClick={() => setAiChatOpen(true)}
+          sx={{
+            position: "fixed",
+            bottom: { xs: 20, md: 32 },
+            right: { xs: 20, md: 32 },
+            zIndex: 1200,
+            bgcolor: "#101D33",
+            color: "#FFFFFF",
+            fontWeight: 700,
+            textTransform: "none",
+            px: 3,
+            gap: 1,
+            boxShadow: "0 8px 24px rgba(7,148,71,0.25)",
+            transition: "all 0.2s ease",
+            "&:hover": {
+              bgcolor: "#101D35",
+              transform: "translateY(-3px)",
+              boxShadow: "0 12px 28px rgba(7,148,71,0.35)",
+            },
+            borderRadius: 5,
+          }}
+        >
+          <AutoAwesomeIcon />
+          Create with AI
+        </Fab>
+      </Tooltip>
+
+      {/* AI chat dialog */}
+      <CreateEventAiChat
+        open={aiChatOpen}
+        onClose={() => {
+          setAiChatOpen(false);
+          setRefreshKey((prev) => prev + 1);
+        }}
+      />
     </Box>
   );
 }
