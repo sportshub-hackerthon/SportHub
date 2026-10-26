@@ -36,9 +36,7 @@ builder.Services.AddScoped<TeamService>();
 builder.Services.AddScoped<RegistrationService>();
 builder.Services.AddScoped<FixtureService>();
 
-builder.Services.AddScoped<WhatsAppService>();
 builder.Services.AddScoped<EmailNotificationService>();
-builder.Services.AddScoped<TwilioWhatsAppService>();
 builder.Services.AddScoped<AwsWhatsAppService>();
 builder.Services.AddScoped<BedrockHarnessService>();
 
