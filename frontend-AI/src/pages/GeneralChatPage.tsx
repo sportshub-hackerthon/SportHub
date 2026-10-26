@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import {
@@ -21,7 +20,7 @@ import SmartToyOutlinedIcon from "@mui/icons-material/SmartToyOutlined";
 import SportsHubHeader from "../components/SportsHubHeader";
 import { C } from "../theme/sportsHubTheme";
 import { sendGeneralChatMessage } from "../services/eventApi";
-
+import MarkdownMessage from "../components/MarkdownMessage";
 interface GeneralChatPageProps {
   onBack: () => void;
 }
@@ -32,16 +31,13 @@ interface ChatItem {
   content: string;
 }
 
-export default function GeneralChatPage({
-  onBack,
-}: GeneralChatPageProps) {
+export default function GeneralChatPage({ onBack }: GeneralChatPageProps) {
   const [messages, setMessages] = useState<ChatItem[]>([
     {
       id: crypto.randomUUID(),
       role: "assistant",
       content:
-        "Hi! I'm your SportsHub AI assistant. " +
-        "How can I help you today?",
+        "Hi! I'm your SportsHub AI assistant. " + "How can I help you today?",
     },
   ]);
 
@@ -49,9 +45,7 @@ export default function GeneralChatPage({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const sessionIdRef = useRef<string | undefined>(
-    undefined
-  );
+  const sessionIdRef = useRef<string | undefined>(undefined);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -84,9 +78,7 @@ export default function GeneralChatPage({
     try {
       const result = await sendGeneralChatMessage({
         message,
-        ...(sessionIdRef.current
-          ? { sessionId: sessionIdRef.current }
-          : {}),
+        ...(sessionIdRef.current ? { sessionId: sessionIdRef.current } : {}),
       });
 
       // Reuse the backend's session for follow-up messages.
@@ -104,9 +96,7 @@ export default function GeneralChatPage({
       ]);
     } catch (err) {
       console.error("General chat error:", err);
-      setError(
-        "Unable to contact SportsHub AI. Please try again."
-      );
+      setError("Unable to contact SportsHub AI. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -150,19 +140,15 @@ export default function GeneralChatPage({
           {/* Chat header */}
           <Stack
             direction="row"
-            
             spacing={2}
             sx={{
               p: 2,
               bgcolor: C.white,
               borderBottom: `1px solid ${C.border}`,
-              alignItems:"center"
+              alignItems: "center",
             }}
           >
-            <IconButton
-              aria-label="Back to events"
-              onClick={onBack}
-            >
+            <IconButton aria-label="Back to events" onClick={onBack}>
               <ArrowBackIcon />
             </IconButton>
 
@@ -177,16 +163,10 @@ export default function GeneralChatPage({
             </Avatar>
 
             <Box>
-              <Typography
-                sx={{fontWeight:800}}
-                color={C.navy}
-              >
+              <Typography sx={{ fontWeight: 800 }} color={C.navy}>
                 SportsHub AI
               </Typography>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-              >
+              <Typography variant="caption" color="text.secondary">
                 General Assistant
               </Typography>
             </Box>
@@ -209,32 +189,36 @@ export default function GeneralChatPage({
                   sx={{
                     display: "flex",
                     justifyContent:
-                      item.role === "user"
-                        ? "flex-end"
-                        : "flex-start",
+                      item.role === "user" ? "flex-end" : "flex-start",
                   }}
                 >
                   <Paper
                     elevation={0}
                     sx={{
                       p: 2,
-                      maxWidth: "85%",
-                      whiteSpace: "pre-wrap",
+                      width: item.role === "assistant" ? "fit-content" : "auto",
+                      maxWidth: item.role === "assistant" ? "100%" : "85%",
+                      minWidth: 0,
+                      overflow: "hidden",
                       overflowWrap: "anywhere",
                       borderRadius: 3,
-                      bgcolor:
-                        item.role === "user"
-                          ? C.green
-                          : C.white,
-                      color:
-                        item.role === "user"
-                          ? C.white
-                          : C.navy,
+                      bgcolor: item.role === "user" ? C.green : C.white,
+                      color: item.role === "user" ? C.white : C.navy,
                     }}
                   >
-                    <Typography variant="body2">
-                      {item.content}
-                    </Typography>
+                    {item.role === "assistant" ? (
+                      <MarkdownMessage content={item.content} />
+                    ) : (
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          whiteSpace: "pre-wrap",
+                          overflowWrap: "anywhere",
+                        }}
+                      >
+                        {item.content}
+                      </Typography>
+                    )}
                   </Paper>
                 </Box>
               ))}
@@ -243,26 +227,16 @@ export default function GeneralChatPage({
                 <Stack
                   direction="row"
                   spacing={1}
-                  sx={{alignItems:"center"}}
+                  sx={{ alignItems: "center" }}
                 >
-                  <CircularProgress
-                    size={18}
-                    sx={{ color: C.green }}
-                  />
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                  >
+                  <CircularProgress size={18} sx={{ color: C.green }} />
+                  <Typography variant="body2" color="text.secondary">
                     SportsHub AI is thinking...
                   </Typography>
                 </Stack>
               )}
 
-              {error && (
-                <Alert severity="error">
-                  {error}
-                </Alert>
-              )}
+              {error && <Alert severity="error">{error}</Alert>}
 
               <div ref={bottomRef} />
             </Stack>
@@ -271,9 +245,7 @@ export default function GeneralChatPage({
           {/* Message composer */}
           <Box
             component="form"
-            onSubmit={(e: FormEvent) =>
-              void handleSend(e)
-            }
+            onSubmit={(e: FormEvent) => void handleSend(e)}
             sx={{
               p: 2,
               bgcolor: C.white,
@@ -288,9 +260,7 @@ export default function GeneralChatPage({
               size="small"
               placeholder="Ask SportsHub AI anything..."
               value={input}
-              onChange={(e) =>
-                setInput(e.target.value)
-              }
+              onChange={(e) => setInput(e.target.value)}
               disabled={loading}
               slotProps={{
                 htmlInput: { "aria-label": "Your message" },

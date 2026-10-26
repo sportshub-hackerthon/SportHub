@@ -10,6 +10,7 @@ import EventInfoMessage from "./EventInfoMessage";
 //import FixtureCard from "./FixtureCard";
 import TeamFixtureCard from "./TeamFixtureCard";
 import RegistrationStatusMessage from "./RegistrationStatusMessage";
+import MarkdownMessage from "./MarkdownMessage";
 interface Props {
   message: Message;
   onQuickReply?: (value: string) => void;
@@ -99,16 +100,21 @@ export default function ChatMessage({
             </Stack>
           )}
 
-          <Typography
-            variant="body2"
-            sx={{
-              lineHeight: 1.5,
-              whiteSpace: "pre-wrap",
-              overflowWrap: "anywhere",
-            }}
-          >
-            {message.content}
-          </Typography>
+          
+{message.role === "assistant" ? (
+  <MarkdownMessage content={message.content} />
+) : (
+  <Typography
+    variant="body2"
+    sx={{
+      whiteSpace: "pre-wrap",
+      overflowWrap: "anywhere",
+    }}
+  >
+    {message.content}
+  </Typography>
+)}
+
 
           {message.registration && (
             <RegistrationSummary registration={message.registration} />
