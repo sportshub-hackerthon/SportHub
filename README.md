@@ -1,10 +1,14 @@
-# SportHub: AI Sports Tournament Management over WhatsApp 🏆
+# SportHub: AI Sports Tournament Management over WhatsApp & Web Chat 🏆
 
 **AWS CDS Agentic AI Hackathon 2026** · Built by Umdoko Internet, South Africa 🇿🇦
 
-Coaches register teams, check fixtures and get updates by chatting on WhatsApp. No forms, no app, no web browsing. Natural conversation is handled by an agent on **Amazon Bedrock AgentCore** (Claude Sonnet 4.6), and WhatsApp is connected through **AWS End User Messaging Social**.
+Coaches register teams, check fixtures and get updates through natural conversation—via **WhatsApp** or **web chat**. No forms, no app downloads required. Natural conversation is handled by an agent on **Amazon Bedrock AgentCore** (Claude Sonnet 4.6), with WhatsApp connected through **AWS End User Messaging Social**.
 
-**💬 Try it live: WhatsApp [+27 69 674 9685](https://wa.me/27696749685)** · **🔧 [API / Swagger](https://sporthub-rng4.onrender.com/swagger)** · **📖 [Full Documentation](PROJECT_DESCRIPTION.md)**
+**💬 Try it live:**
+- **WhatsApp:** [+27 69 674 9685](https://wa.me/27696749685) (South African number)
+- **Web Chat API:** [Test in Swagger](https://sporthub-rng4.onrender.com/swagger) → `POST /api/Chat/invoke`
+
+**🔧 [Full API Documentation](https://sporthub-rng4.onrender.com/swagger)** · **📖 [Technical Details](PROJECT_DESCRIPTION.md)**
 
 ---
 
@@ -18,6 +22,7 @@ Township coaches have smartphones with WhatsApp, but limited data makes web regi
 graph TB
     subgraph "User Layer"
         WA[WhatsApp Users<br/>+27 69 674 9685]
+        WEB[Web Chat Users<br/>Browser/API]
         EMAIL[📧 Coach Email<br/>Confirmations]
     end
 
@@ -39,10 +44,15 @@ graph TB
         GATEWAY[AgentCore Gateway<br/>Tool Access]
     end
 
-    %% Message Flow
+    %% WhatsApp Message Flow
     WA <-->|Send/Receive| SOCIAL
     SOCIAL -->|Publish Event| SNS
     SNS -->|Webhook| API
+    
+    %% Web Chat Flow
+    WEB <-->|HTTP/JSON| API
+    
+    %% Both channels use same AI backend
     API -->|Invoke| LAMBDA
     LAMBDA <-->|invoke_harness| BEDROCK
     
@@ -63,7 +73,7 @@ graph TB
     
     class SOCIAL,LAMBDA,RDS,SES,SNS aws
     class BEDROCK,GATEWAY ai
-    class WA,API,EMAIL user
+    class WA,WEB,API,EMAIL user
 ```
 
 **Key Flow:**
@@ -106,7 +116,11 @@ Model: `global.anthropic.claude-sonnet-4-6` (Bedrock Converse API).
 ### Option A: Test the live deployment (about 2 minutes, nothing to install)
 
 1. **Wake the backend.** It runs on Render's free tier, which sleeps after about 30 minutes, so the first request can take 30 to 60 seconds. Open the [Swagger page](https://sporthub-rng4.onrender.com/swagger) and wait for it to load.
-2. **Message the bot** on WhatsApp: **+27 69 674 9685**.
+
+2. **Choose your testing method:**
+   - **WhatsApp:** Message **+27 69 674 9685** (recommended for full experience)
+   - **Web Chat API:** Use Swagger → `POST /api/Chat/invoke` with JSON: `{"message": "Hi", "sessionId": "test-123"}`
+
 3. Try this conversation:
 
 | You send | Expected reply |
@@ -119,6 +133,8 @@ Model: `global.anthropic.claude-sonnet-4-6` (Bedrock Converse API).
 | `YES` (at the summary) | Registration saved, confirmation email sent |
 | `fixtures` | Your team's fixtures |
 
+> **Note:** Both WhatsApp and Web Chat use the same Bedrock AgentCore backend, so the conversation experience is identical.
+>
 > **Email note:** if Amazon SES is still in sandbox mode, confirmation emails are only delivered to verified addresses. Either verify a test email address in the SES console, or move SES to production mode (requires AWS support ticket) to send to any address.
 
 ### Option B: Run it yourself
@@ -218,8 +234,9 @@ Because the session ID is derived from the phone number, each coach keeps their 
 
 ## Features
 
+- **Multi-channel access**: Same AI conversation experience via WhatsApp (`/api/aws-whatsapp/webhook`) or Web Chat API (`/api/Chat/invoke`)
 - **Conversational registration**: natural language, mid-conversation corrections ("Actually, change that to U11"), and a summary the coach must confirm with YES before anything is saved
-- **Context and memory**: per-coach sessions with harness-managed memory
+- **Context and memory**: per-coach sessions with harness-managed memory (works across both WhatsApp and web chat)
 - **Real-time checks**: event capacity and age group validation, with alternatives suggested when an event is full
 - **Fixture generation**: round-robin schedules per age group, pitch allocation and clash detection (`POST /api/Fixtures/generate/{eventId}`)
 - **Notifications**: WhatsApp messages and email confirmations via SES
