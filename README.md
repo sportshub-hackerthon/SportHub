@@ -4,11 +4,14 @@
 
 Coaches register teams, check fixtures and get updates through natural conversation—via **WhatsApp** or **web chat**. No forms, no app downloads required. Natural conversation is handled by an agent on **Amazon Bedrock AgentCore** (Claude Sonnet 4.6), with WhatsApp connected through **AWS End User Messaging Social**.
 
-**💬 Try it live:**
-- **WhatsApp:** [+27 69 674 9685](https://wa.me/27696749685) (South African number)
-- **Web Chat API:** [Test in Swagger](https://sporthub-rng4.onrender.com/swagger) → `POST /api/Chat/invoke`
+<!-- **� [Watch 3-minute demo](https://youtu.be/VIDEO_ID)** (coming soon) -->
 
-**🔧 [Full API Documentation](https://sporthub-rng4.onrender.com/swagger)** · **📖 [Technical Details](PROJECT_DESCRIPTION.md)**
+**�💬 Try it live:**
+- **Web Chat:** [https://d4t6kc08b3ljm.cloudfront.net/](https://d4t6kc08b3ljm.cloudfront.net/) (React app, hosted on CloudFront)
+- **WhatsApp:** [+27 69 674 9685](https://wa.me/27696749685) (South African number)
+- **API:** [Swagger Documentation](https://sporthub-rng4.onrender.com/swagger) (for developers)
+
+**📖 [Technical Details](PROJECT_DESCRIPTION.md)**
 
 ---
 
@@ -18,93 +21,44 @@ Township coaches have smartphones with WhatsApp, but limited data makes web regi
 
 ## Architecture
 
-```mermaid
-graph TB
-    subgraph "User Layer"
-        WA[WhatsApp Users<br/>+27 69 674 9685]
-        WEB[Web Chat Users<br/>Browser/API]
-        EMAIL[📧 Coach Email<br/>Confirmations]
-    end
-
-    subgraph "AWS Cloud Services"
-        SOCIAL[AWS End User Messaging Social<br/>WhatsApp Business API]
-        SNS[Amazon SNS<br/>Event Notifications]
-        SES[AWS SES<br/>Email Service]
-        
-        subgraph "AI Processing"
-            BEDROCK[AWS Bedrock AgentCore<br/>Claude Sonnet 4.6]
-            LAMBDA[AWS Lambda<br/>Python 3.12<br/>Bedrock Proxy]
-        end
-        
-        subgraph "Backend & Data"
-            API[.NET 8 Backend API<br/>Render.com]
-            RDS[(AWS RDS MySQL<br/>eu-west-1)]
-        end
-        
-        GATEWAY[AgentCore Gateway<br/>Tool Access]
-    end
-
-    %% WhatsApp Message Flow
-    WA <-->|Send/Receive| SOCIAL
-    SOCIAL -->|Publish Event| SNS
-    SNS -->|Webhook| API
-    
-    %% Web Chat Flow
-    WEB <-->|HTTP/JSON| API
-    
-    %% Both channels use same AI backend
-    API -->|Invoke| LAMBDA
-    LAMBDA <-->|invoke_harness| BEDROCK
-    
-    %% Tool Access
-    BEDROCK -.->|Call Tools| GATEWAY
-    GATEWAY -->|Query Data| API
-    API <-->|Store/Query| RDS
-    
-    %% Response & Notifications
-    API -->|SendWhatsAppMessage| SOCIAL
-    API -->|Send Email| SES
-    SES -->|Confirmation| EMAIL
-
-    %% Styling
-    classDef aws fill:#FF9900,stroke:#232F3E,stroke-width:2px,color:#fff
-    classDef ai fill:#8B5CF6,stroke:#232F3E,stroke-width:2px,color:#fff
-    classDef user fill:#06B6D4,stroke:#232F3E,stroke-width:2px,color:#232F3E
-    
-    class SOCIAL,LAMBDA,RDS,SES,SNS aws
-    class BEDROCK,GATEWAY ai
-    class WA,WEB,API,EMAIL user
-```
+![SportHub Architecture](docs/images/sporthub-architecture.png)
 
 **Key Flow:**
 ```
-WhatsApp user
+Web Chat user → CloudFront (S3) → .NET API
+WhatsApp user → AWS End User Messaging Social → SNS → .NET API (Render)
    ↓
-AWS End User Messaging Social (WhatsApp)
-   ↓ SNS event destination
-.NET 8 Backend API (Render)
-   ↓ HTTPS
-AWS Lambda (Python 3.12, Bedrock proxy)
-   ↓ invoke_harness
-Bedrock AgentCore Harness (amusema_sports_agent)
-   ├── Claude Sonnet 4.6 via the Converse API
-   ├── Harness-managed memory (semantic + summarization)
-   └── AgentCore Gateway ──► .NET API tools (events, registrations, fixtures) ──► RDS MySQL
+.NET API → AWS Lambda (Python 3.12, Bedrock proxy)
    ↓
-Lambda → .NET API → SendWhatsAppMessage → user's WhatsApp
-                  └→ Amazon SES → confirmation email
+AWS Lambda → Bedrock AgentCore Harness (amusema_sports_agent)
+   ├── Claude Sonnet 4.6 via Converse API
+   ├── Harness-managed memory (per session)
+   └── AgentCore Gateway ──► .NET API /api/agent-tools endpoints ──► RDS MySQL
+   ↓
+Response: Lambda → .NET API → WhatsApp/Web Chat
+Emails: .NET API → Amazon SES → coach's email
 ```
 
 ### AWS services
 
 | Service | Role in SportHub |
 |---|---|
-| **Amazon Bedrock AgentCore** (Harness, Gateway, Memory) | Conversational agent, tool access and per-coach memory *(primary CDS service)* |
+| **Amazon Bedrock AgentCore** (Harness, Gateway, Memory) | Conversational agent, tool access and per-session memory *(primary CDS service)* |
 | **AWS End User Messaging Social** | WhatsApp Business integration, inbound and outbound *(CDS service)* |
 | **Amazon SES** | Registration confirmation emails *(CDS service)* |
 | **Amazon SNS** | Delivers inbound WhatsApp events to the backend |
 | **AWS Lambda** (Python 3.12) | Serverless proxy that invokes the harness |
 | **Amazon RDS MySQL** (eu-west-1) | Teams, events, registrations and fixtures |
+| **Amazon S3** | Hosts web chat React app static files |
+| **Amazon CloudFront** | CDN for web chat app (https://d4t6kc08b3ljm.cloudfront.net/) |
+| **AWS IAM** | Roles for Lambda and the harness (`BedrockAgentRole`) |
+| **AWS End User Messaging Social** | WhatsApp Business integration, inbound and outbound *(CDS service)* |
+| **Amazon SES** | Registration confirmation emails *(CDS service)* |
+| **Amazon SNS** | Delivers inbound WhatsApp events to the backend |
+| **AWS Lambda** (Python 3.12) | Serverless proxy that invokes the harness |
+| **Amazon RDS MySQL** (eu-west-1) | Teams, events, registrations and fixtures |
+| **Amazon S3** | Hosts web chat React app static files |
+| **Amazon CloudFront** | CDN for web chat app (https://d4t6kc08b3ljm.cloudfront.net/) |
 | **AWS IAM** | Roles for Lambda and the harness (`BedrockAgentRole`) |
 
 Model: `global.anthropic.claude-sonnet-4-6` (Bedrock Converse API).
@@ -175,7 +129,7 @@ This creates a virtual environment, installs `boto3`, zips `lambda_function.py` 
 
 In the AWS console, open **Bedrock AgentCore** and create:
 
-1. A **Gateway** (we used `sporthub-api-gateway`) whose target is the backend API's REST endpoints (`/api/Events`, `/api/Registrations`, `/api/Fixtures`, `/api/Teams`).
+1. A **Gateway** (we used `sporthub-api-gateway`) whose target is an OpenAPI schema describing the `/api/agent-tools` endpoints (create-event, register-team, get events, registration status).
 2. A **Harness** (we used `amusema_sports_agent`) with:
    - Model: `global.anthropic.claude-sonnet-4-6`, Converse API
    - System prompt: copy from [`backend/bedrock-system-prompt.md`](backend/bedrock-system-prompt.md)
@@ -187,16 +141,19 @@ In the AWS console, open **Bedrock AgentCore** and create:
 
 Set these as environment variables (the double underscore maps to nested JSON keys in .NET). Do not commit secrets.
 
-| Variable | Example |
+| Variable | What it's for |
 |---|---|
 | `ConnectionStrings__Default` | `Server=<rds-endpoint>;Port=3306;User=admin;Password=<password>;Database=sporthub;` |
 | `AWS__Region` | `eu-west-1` |
-| `AWS__WhatsAppPhoneNumberId` | `phone-number-id-...` |
-| `AWS__WhatsAppBusinessAccountId` | `waba-...` |
-| `AWS__WhatsAppVerifyToken` | any secret string |
-| `AWS__BedrockAgentId` | your harness ID |
-| `Bedrock__PythonServiceUrl` | the Lambda URL from step 3 |
-| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | credentials with `social-messaging:SendWhatsAppMessage` and `ses:SendEmail` |
+| `AWS__WhatsAppPhoneNumberId` | Your WhatsApp phone number ID from End User Messaging Social |
+| `AWS__WhatsAppBusinessAccountId` | Your WhatsApp business account ID (`waba-...`) |
+| `AWS__WhatsAppVerifyToken` | Any secret string for webhook verification |
+| `AWS__BedrockAgentId` | Your Bedrock harness ID |
+| `Bedrock__PythonServiceUrl` | The Lambda URL from step 3 |
+| `AWS__BedrockAccessKeyId` / `AWS__BedrockSecretAccessKey` | IAM credentials for calling Lambda and the AI agent |
+| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | IAM credentials for sending WhatsApp messages (`social-messaging:SendWhatsAppMessage`) and emails (`ses:SendEmail`) |
+
+> **Note:** Both credential pairs can use the same IAM user if that user has all required permissions.
 
 #### 6. Connect WhatsApp to the backend
 
@@ -215,7 +172,9 @@ The API is at `http://localhost:5000` (Swagger at `/swagger`). The solution file
 
 #### 8. Test without WhatsApp
 
-You can exercise the AI agent directly through `ChatController` in Swagger (`POST /api/Chat`), which skips the WhatsApp and SNS steps. This is the fastest way to confirm the Lambda, harness and gateway are wired up.
+You can exercise the AI agent directly through `ChatController` in Swagger (`POST /api/chat/invoke`), which skips the WhatsApp and SNS steps. This is the fastest way to confirm the Lambda, harness and gateway are wired up.
+
+Alternatively, test the live web chat at https://d4t6kc08b3ljm.cloudfront.net/
 
 ---
 
@@ -234,9 +193,9 @@ Because the session ID is derived from the phone number, each coach keeps their 
 
 ## Features
 
-- **Multi-channel access**: Same AI conversation experience via WhatsApp (`/api/aws-whatsapp/webhook`) or Web Chat API (`/api/Chat/invoke`)
+- **Multi-channel access**: Same AI conversation experience via WhatsApp (`/api/aws-whatsapp/webhook`), Web Chat App (CloudFront), or Web Chat API (`/api/chat/invoke`)
 - **Conversational registration**: natural language, mid-conversation corrections ("Actually, change that to U11"), and a summary the coach must confirm with YES before anything is saved
-- **Context and memory**: per-coach sessions with harness-managed memory (works across both WhatsApp and web chat)
+- **Context and memory**: per-session memory with harness-managed semantic and summarization strategies
 - **Real-time checks**: event capacity and age group validation, with alternatives suggested when an event is full
 - **Fixture generation**: round-robin schedules per age group, pitch allocation and clash detection (`POST /api/Fixtures/generate/{eventId}`)
 - **Notifications**: WhatsApp messages and email confirmations via SES
