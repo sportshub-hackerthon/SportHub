@@ -2,124 +2,202 @@
 
 ## Architecture
 
-Your WhatsApp bot now uses Bedrock AgentCore Harness for intelligent, conversational responses:
+Your multi-channel bot (WhatsApp + Web Chat) uses Bedrock AgentCore Harness for intelligent, conversational responses:
 
 ```
-WhatsApp → Twilio → C# Webhook → Python Service → Bedrock Harness → Gateway → Your API
+WhatsApp User → AWS End User Messaging Social → SNS → C# API → Lambda (Python) → Bedrock Harness → Gateway → Your API Tools
+Web Chat User → C# API (ChatController) → Lambda (Python) → Bedrock Harness → Gateway → Your API Tools
 ```
 
 ## Components
 
-### 1. Python Bedrock Service (`bedrock_harness_service.py`)
+### 1. Lambda Bedrock Proxy (`lambda_function.py`)
+- Deployed as AWS Lambda function
 - Handles `invoke_harness` calls using boto3
 - Manages session IDs (min 33 chars required by AWS)
-- Streams responses from Bedrock
+- Streams responses from Bedrock AgentCore
 
 ### 2. C# Service (`BedrockHarnessService.cs`)
-- Calls Python service via HTTP
-- Maintains session per WhatsApp user
-- Returns intelligent responses to WhatsApp
+- Calls Lambda via HTTP
+- Maintains session per user (WhatsApp phone number or web session ID)
+- Returns intelligent responses to both WhatsApp and web chat
 
-### 3. Bedrock Harness
+### 3. Bedrock AgentCore Harness
 - **ARN:** `arn:aws:bedrock-agentcore:eu-west-1:262683589693:harness/amusema_sports_agent-Azjer58UxL`
-- Uses Gateway with your SportHub API tools
-- Conversational AI with context retention
+- **Model:** Claude Sonnet 4.6 (global profile, Converse API)
+- **Memory:** Harness-managed (semantic + summarization)
+- **Gateway:** Calls your SportHub API tools (events, registrations, fixtures, teams)
+- **IAM Role:** `BedrockAgentRole` with Bedrock and Gateway permissions
 
-## Running Locally
+## Deploying Lambda Function
 
-### 1. Install Python Dependencies
+### Prerequisites
+- AWS CLI configured (`aws configure`)
+- Lambda execution role with `bedrock-agentcore:InvokeHarness` permission
+
+### Deploy Steps
+
 ```bash
 cd backend
-pip install -r requirements.txt
+./deploy_lambda.sh
 ```
 
-### 2. Set AWS Credentials
+This script:
+1. Creates Python virtual environment
+2. Installs boto3 dependencies
+3. Packages `lambda_function.py`
+4. Uploads to AWS Lambda
+
+### Lambda Configuration
+- **Runtime:** Python 3.12
+- **Handler:** `lambda_function.lambda_handler`
+- **Timeout:** 60 seconds (for Bedrock streaming)
+- **Memory:** 256 MB
+- **Environment Variables:** None (uses IAM role for AWS credentials)
+
+### Expose Lambda
+Create a Lambda Function URL or API Gateway endpoint, then set in your .NET backend:
+
 ```bash
-export AWS_ACCESS_KEY_ID="your-key"
-export AWS_SECRET_ACCESS_KEY="your-secret"
-export AWS_DEFAULT_REGION="eu-west-1"
-```
-
-### 3. Start Python Service
-```bash
-python bedrock_harness_service.py 5001
-```
-
-Service runs on http://localhost:5001
-
-### 4. Start C# Backend
-```bash
-cd src/SportHub
-dotnet run
-```
-
-## Deploying to Render
-
-### Option 1: Two Services (Recommended)
-
-**Service 1: Python Bedrock Service**
-- **Type:** Web Service
-- **Build Command:** `pip install -r backend/requirements.txt`
-- **Start Command:** `python backend/bedrock_harness_service.py 10000`
-- **Environment Variables:**
-  - `AWS_ACCESS_KEY_ID`
-  - `AWS_SECRET_ACCESS_KEY`
-  - `AWS_DEFAULT_REGION=eu-west-1`
-
-**Service 2: C# API (Existing)**
-- Add environment variable:
-  - `Bedrock__PythonServiceUrl=https://your-python-service.onrender.com`
-
-### Option 2: Single Service with Supervisor
-
-Create `Procfile`:
-```
-web: python backend/bedrock_harness_service.py & cd backend/src/SportHub && dotnet run
+# In Render or local environment
+export Bedrock__PythonServiceUrl="https://your-lambda-url.execute-api.eu-west-1.amazonaws.com"
 ```
 
 ## Testing
 
-### Test Python Service
+### Test Lambda Directly
 ```bash
-curl -X POST http://localhost:5001/invoke \
+# If using Lambda Function URL
+curl -X POST https://your-lambda-url.execute-api.eu-west-1.amazonaws.com \
   -H "Content-Type: application/json" \
   -d '{"message": "Hello", "sessionId": "test123"}'
 ```
 
-### Test WhatsApp
-Send message to your Twilio WhatsApp number:
+### Test WhatsApp Channel
+Send message to **+27 69 674 9685**:
 ```
 "hi"
 "I want to register my team"
 "actually, show me fixtures first"
 ```
 
-The bot should understand context and corrections!
+### Test Web Chat Channel
+In Swagger (`https://sporthub-rng4.onrender.com/swagger`), use `POST /api/Chat/invoke`:
+```json
+{
+  "message": "hi",
+  "sessionId": "web-test-123"
+}
+```
+
+The bot should understand context and corrections across both channels!
 
 ## Key Features
 
+✅ **Multi-channel** - Works on both WhatsApp and Web Chat  
 ✅ **Conversational** - Understands natural language  
 ✅ **Context-aware** - Remembers conversation per session  
-✅ **Handles corrections** - "my team name is wrong"  
-✅ **Task switching** - "cancel, show fixtures instead"  
-✅ **Uses your API** - Via Gateway with OpenAPI schema
+✅ **Handles corrections** - "Actually, my team name is wrong"  
+✅ **Task switching** - "Cancel, show fixtures instead"  
+✅ **Uses your API** - Via AgentCore Gateway with tool definitions
 
 ## Session Management
 
-- Session ID format: `whatsapp-session-{phoneNumber}`
-- Minimum 33 characters (padded with zeros)
-- Persistent per WhatsApp user
-- Bedrock manages conversation history automatically
+**WhatsApp Sessions:**
+- Session ID format: `whatsapp-aws-{phoneNumber}` (padded to 33+ chars)
+- Persistent per phone number
+- Example: `whatsapp-aws-27696749685000000000000000000`
+
+**Web Chat Sessions:**
+- Session ID format: `web-chat-{customId}` (padded to 33+ chars)
+- Persistent per provided session ID
+- Example: `web-chat-user123000000000000000000000000`
+
+Bedrock AgentCore manages conversation history automatically for each session.
 
 ## Troubleshooting
 
-**Error: "BedrockAgentCore' object has no attribute 'invoke_harness'"**
-- Solution: Upgrade boto3: `pip install --upgrade boto3 botocore`
+**Error: "BedrockAgentCore object has no attribute 'invoke_harness'"**
+- Solution: Ensure boto3 is updated in Lambda layer: `pip install --upgrade boto3 botocore`
 
 **Error: "Session ID must be at least 33 characters"**
-- Solution: Already handled in code with padding
+- Solution: Already handled in code with padding (`.PadRight(33, '0')`)
 
-**Empty responses**
-- Check AWS credentials
-- Verify Harness ARN is correct
-- Check Render logs for Python service errors
+**Empty or no responses**
+- Check Lambda CloudWatch logs for errors
+- Verify Lambda IAM role has `bedrock-agentcore:InvokeHarness` permission
+- Verify Harness ARN is correct in Lambda code
+- Check `Bedrock__PythonServiceUrl` points to correct Lambda URL
+- Ensure `BedrockAgentRole` has Bedrock model access and Gateway permissions
+
+**Gateway tool calls fail**
+- Verify Gateway target URL is reachable from AWS
+- Check backend API is awake (Render free tier sleeps after 30 min)
+- Review Gateway configuration in Bedrock console
+
+**WhatsApp not responding**
+- Check SNS subscription is "Confirmed"
+- Verify Event Destination points to correct SNS topic
+- Check backend webhook at `/api/aws-whatsapp/webhook` is accessible
+
+## Architecture Diagram
+
+```
+┌─────────────────┐
+│  WhatsApp User  │
+└────────┬────────┘
+         │
+         v
+┌───────────────────────────┐
+│ AWS End User Messaging    │
+│ Social (WhatsApp)         │
+└────────┬──────────────────┘
+         │
+         v
+┌───────────────────────────┐
+│ Amazon SNS                │
+│ (Event Destination)       │
+└────────┬──────────────────┘
+         │
+         v
+┌───────────────────────────┐      ┌─────────────────┐
+│ .NET Backend API          │◄─────│  Web Chat User  │
+│ (Render)                  │      └─────────────────┘
+└────────┬──────────────────┘
+         │
+         v
+┌───────────────────────────┐
+│ AWS Lambda                │
+│ (Python 3.12)             │
+│ Bedrock Proxy             │
+└────────┬──────────────────┘
+         │
+         v
+┌───────────────────────────┐
+│ Bedrock AgentCore         │
+│ Harness                   │
+│ - Claude Sonnet 4.6       │
+│ - Memory                  │
+│ - Gateway                 │
+└────────┬──────────────────┘
+         │
+         v
+┌───────────────────────────┐
+│ AgentCore Gateway         │
+│ (Tool Access)             │
+└────────┬──────────────────┘
+         │
+         v
+┌───────────────────────────┐
+│ .NET API Tools            │
+│ - GET /api/Events         │
+│ - POST /api/Registrations │
+│ - GET /api/Fixtures       │
+└────────┬──────────────────┘
+         │
+         v
+┌───────────────────────────┐
+│ AWS RDS MySQL             │
+│ (eu-west-1)               │
+└───────────────────────────┘
+```
