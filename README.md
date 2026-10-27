@@ -52,14 +52,6 @@ Emails: .NET API → Amazon SES → coach's email
 | **Amazon S3** | Hosts web chat React app static files |
 | **Amazon CloudFront** | CDN for web chat app (https://d4t6kc08b3ljm.cloudfront.net/) |
 | **AWS IAM** | Roles for Lambda and the harness (`BedrockAgentRole`) |
-| **AWS End User Messaging Social** | WhatsApp Business integration, inbound and outbound *(CDS service)* |
-| **Amazon SES** | Registration confirmation emails *(CDS service)* |
-| **Amazon SNS** | Delivers inbound WhatsApp events to the backend |
-| **AWS Lambda** (Python 3.12) | Serverless proxy that invokes the harness |
-| **Amazon RDS MySQL** (eu-west-1) | Teams, events, registrations and fixtures |
-| **Amazon S3** | Hosts web chat React app static files |
-| **Amazon CloudFront** | CDN for web chat app (https://d4t6kc08b3ljm.cloudfront.net/) |
-| **AWS IAM** | Roles for Lambda and the harness (`BedrockAgentRole`) |
 
 Model: `global.anthropic.claude-sonnet-4-6` (Bedrock Converse API).
 
