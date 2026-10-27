@@ -4,9 +4,9 @@
 
 Coaches register teams, check fixtures and get updates through natural conversation—via **WhatsApp** or **web chat**. No forms, no app downloads required. Natural conversation is handled by an agent on **Amazon Bedrock AgentCore** (Claude Sonnet 4.6), with WhatsApp connected through **AWS End User Messaging Social**.
 
-<!-- **� [Watch 3-minute demo](https://youtu.be/VIDEO_ID)** (coming soon) -->
+**📹 [Watch 3-minute demo](https://youtu.be/H60ZGM07zx0)**
 
-**�💬 Try it live:**
+**💬 Try it live:**
 - **Web Chat:** [https://d4t6kc08b3ljm.cloudfront.net/](https://d4t6kc08b3ljm.cloudfront.net/) (React app, hosted on CloudFront)
 - **WhatsApp:** [+27 69 674 9685](https://wa.me/27696749685) (South African number)
 - **API:** [Swagger Documentation](https://sporthub-rng4.onrender.com/swagger) (for developers)
